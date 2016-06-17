@@ -11,8 +11,10 @@ fi
 #INDUSTRY_CODE=1100		# 房地产
 #INDUSTRY_CODE=2000		# 酒店
 #INDUSTRY_CODE=3110		# 足球
+#INDUSTRY_CODE=7020		# 金服
 
-if [ "$INDUSTRY_CODE" != "1100" -a "$INDUSTRY_CODE" != "2000" -a "$INDUSTRY_CODE" != "3110" ]; then
+
+if [ "$INDUSTRY_CODE" != "1100" -a "$INDUSTRY_CODE" != "2000" -a "$INDUSTRY_CODE" != "3110" -a "$INDUSTRY_CODE" != "7020" ]; then
 	echo "Invalid INDUSTRY_CODE, please choose one from 1100, 2000 and 3110."
 	exit -1
 fi

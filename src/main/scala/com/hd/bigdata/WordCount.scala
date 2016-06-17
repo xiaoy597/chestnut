@@ -44,7 +44,13 @@ object WordCount {
       flagIndex.take(100).foreach(println)
     }
 
-    val finalIndex = transformer.produceFinalIndex(numIndex, flagIndex)
+    val commonIndex = transformer.produceCommonFlagIndex()
+    if (TransformerConfigure.isDebug) {
+      println("Common Flag Index Data:")
+      commonIndex.take(100).foreach(println)
+    }
+
+    val finalIndex = transformer.produceFinalIndex(numIndex, flagIndex, commonIndex)
     if (TransformerConfigure.isDebug) {
       println("Final Index Data:")
       finalIndex.take(100).foreach(println)

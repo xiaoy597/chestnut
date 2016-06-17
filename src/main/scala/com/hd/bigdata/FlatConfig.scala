@@ -156,7 +156,7 @@ object FlatConfig {
         "JOIN h50_calc_mode t2 ON t1.indx_calc_mode_cd = t2.indx_calc_mode_cd " +
         "JOIN h50_indx_tbl_info t3 ON t1.indx_tbl_nm = t3.indx_tbl_nm " +
         "and t1.inds_cls_cd = t3.inds_cls_cd " +
-        "WHERE t1.active_ind = 1 and t3.inds_cls_cd = '" + industryClassCode + "' "
+        "WHERE t1.active_ind = 1 and (t3.inds_cls_cd = '' or t3.inds_cls_cd = '" + industryClassCode + "') "
     } else {
       sql = "SELECT t1.indx_tbl_nm , t1.inds_cls_cd, t1.indx_clmn_nm , t1.statt_indx_id , t1.dim_id , t1.indx_calc_mode_cd , t2.indx_calc_mode_nm , t1.flat_tbl_nm , t1.flat_clmn_nm , t1.active_ind " +
         "FROM h50_flat_rule_config t1 " +
@@ -164,7 +164,7 @@ object FlatConfig {
         "JOIN h50_indx_tbl_info t3 ON t1.indx_tbl_nm = t3.indx_tbl_nm " +
         "and t1.inds_cls_cd = t3.inds_cls_cd " +
         "WHERE t1.active_ind = 1 and t1.indx_tbl_nm = '" + tableName + "' " +
-        "and t3.inds_cls_cd = '" + industryClassCode + "' "
+        "and (t3.inds_cls_cd = '' or t3.inds_cls_cd = '" + industryClassCode + "') "
     }
 
     try {
@@ -174,8 +174,17 @@ object FlatConfig {
       rs = ps.executeQuery
 
       while (rs.next) {
-        item = FlatRuleConfig(rs.getString("indx_tbl_nm"), rs.getString("inds_cls_cd"), rs.getString("indx_clmn_nm"), rs.getString("statt_indx_id"), rs.getString("dim_id")
-          , rs.getString("indx_calc_mode_cd"), rs.getString("indx_calc_mode_nm"), rs.getString("flat_tbl_nm"), rs.getString("flat_clmn_nm"), rs.getString("active_ind"))
+        item = FlatRuleConfig(
+          rs.getString("indx_tbl_nm").toLowerCase,
+          rs.getString("inds_cls_cd"),
+          rs.getString("indx_clmn_nm").toLowerCase,
+          rs.getString("statt_indx_id"),
+          rs.getString("dim_id"),
+          rs.getString("indx_calc_mode_cd"),
+          rs.getString("indx_calc_mode_nm"),
+          rs.getString("flat_tbl_nm"),
+          rs.getString("flat_clmn_nm"),
+          rs.getString("active_ind"))
         itemList += item
       }
 
