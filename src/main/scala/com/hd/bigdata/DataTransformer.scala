@@ -359,15 +359,15 @@ class DataTransformer(val sc: SparkContext, val industryClassCode: String, val t
                         commonIndexRDD: RDD[(String, Map[String, String])])
   : RDD[(String, Map[String, String])] = {
 
-//    numIndexRDD.cogroup(flagIndexRDD).mapValues(x => {
-//      var finalMap = Map[String, String]()
-//      for (index <- x._1)
-//        finalMap = finalMap ++ index
-//      for (index <- x._2)
-//        finalMap = finalMap ++ index
-//
-//      finalMap
-//    })
+    //    numIndexRDD.cogroup(flagIndexRDD).mapValues(x => {
+    //      var finalMap = Map[String, String]()
+    //      for (index <- x._1)
+    //        finalMap = finalMap ++ index
+    //      for (index <- x._2)
+    //        finalMap = finalMap ++ index
+    //
+    //      finalMap
+    //    })
 
     numIndexRDD.fullOuterJoin(flagIndexRDD).mapValues {
       case (Some(m1), Some(m2)) => m1 ++ m2
@@ -387,7 +387,7 @@ class DataTransformer(val sc: SparkContext, val industryClassCode: String, val t
   : RDD[(String, Map[String, String])] = {
 
     val dspsRules = FlatConfig.getDspsRule().map(
-      x => x.flat_clmn_nm ->(x.dsps_alg_type_cd, x.dsps_rules.split(','))).toMap
+      x => x.flat_clmn_nm ->(x.dsps_alg_type_cd, x.dsps_rules.split(','), x.tag_id.toString)).toMap
 
     if (TransformerConfigure.isDebug) {
       println("Rules for generating discrete metrics: ")
@@ -426,53 +426,59 @@ class DataTransformer(val sc: SparkContext, val industryClassCode: String, val t
     originalIndex.mapValues(indexMap => {
       val idxsToConvert = indexMap.keySet & dspsRules.keySet
 
-      if (idxsToConvert.isEmpty) indexMap
-      else {
-        val discretIdx = (
-          for {
-            idx <- idxsToConvert
-            dsps_type_cd = dspsRules(idx)._1
-            paramList = dspsRules(idx)._2
-            idxValueNum = BigDecimal(indexMap(idx))
-            idxValueStr = indexMap(idx)
-          }
-            yield {
-              dsps_type_cd match {
-                case "10" => // 按需求分段, 参数: 分段1下限, 分段1上限, 分段2下限, 分段2上限, ...
-                  (for {
-                    i <- 0 until paramList.length / 2
-                    lowerBound = BigDecimal(paramList(2 * i))
-                    upperBound = BigDecimal(paramList(2 * i + 1))
-                    if idxValueNum > lowerBound && idxValueNum <= upperBound
-                  } yield idx -> (i + 1).toString).toMap
-                case "40" => // 定长步进分段, 参数: 下限值, 上限值, 分段长度
-                  val lowerBound = BigDecimal(paramList(0))
-                  val upperBound = BigDecimal(paramList(1))
-                  val stepValue = BigDecimal(paramList(2))
-                  if (idxValueNum < lowerBound || idxValueNum > upperBound)
-                    Map(idx -> indexMap(idx))
-                  else
-                    Map(idx -> ((idxValueNum - lowerBound) / stepValue).toInt.toString)
-                case "30" => // 键值映射/枚举, 参数: 映射表编号
-                  val mappingTableId = paramList(0)
-
-                  if (mappingTables.contains(mappingTableId)) {
-                    val mapping = mappingTables(mappingTableId)
-                    if (mapping.contains(idxValueStr))
-                      Map(idx -> mapping(idxValueStr))
-                    else
-                      Map(idx -> indexMap(idx))
-                  } else
-                    Map(idx -> indexMap(idx))
-
-                case _ => // 未识别的离散模式
-                  Map(idx -> indexMap(idx))
-              }
-            }).reduce((x1, x2) => x1 ++ x2)
-
-        indexMap ++ discretIdx
+      val tagList = for {
+        idx <- idxsToConvert
+        dsps_type_cd = dspsRules(idx)._1
+        paramList = dspsRules(idx)._2
+        tagName = "ctgy_" + dspsRules(idx)._3
+        idxValueStr = indexMap(idx)
       }
-    })
+        yield {
+          dsps_type_cd match {
+            case "10" => // 按需求分段, 参数: 分段1下限, 分段1上限, 分段2下限, 分段2上限, ...
+              val idxValueNum = BigDecimal(indexMap(idx))
+              val hitSegList = (for {
+                i <- 0 until paramList.length / 2
+                lowerBound = BigDecimal(paramList(2 * i))
+                upperBound = BigDecimal(paramList(2 * i + 1))
+                if idxValueNum > lowerBound && idxValueNum <= upperBound
+              } yield Map(tagName -> (i + 1).toString))
+              if (hitSegList.isEmpty)
+                Map(tagName -> (paramList.length / 2 + 1).toString)
+              else
+                hitSegList.last
+
+            case "40" => // 定长步进分段, 参数: 下限值, 上限值, 分段长度
+              val lowerBound = BigDecimal(paramList(0))
+              val upperBound = BigDecimal(paramList(1))
+              val idxValueNum = BigDecimal(indexMap(idx))
+              val stepValue = BigDecimal(paramList(2))
+              if (idxValueNum < lowerBound || idxValueNum > upperBound)
+                Map(tagName -> indexMap(idx))
+              else
+                Map(tagName -> ((idxValueNum - lowerBound) / stepValue).toInt.toString)
+            case "30" => // 键值映射/枚举, 参数: 映射表编号
+              val mappingTableId = paramList(0)
+
+              if (mappingTables.contains(mappingTableId)) {
+                val mapping = mappingTables(mappingTableId)
+                if (mapping.contains(idxValueStr))
+                  Map(tagName -> mapping(idxValueStr))
+                else
+                  Map(tagName -> indexMap(idx))
+              } else
+                Map(tagName -> indexMap(idx))
+
+            case _ => // 未识别的离散模式
+              Map(tagName -> ("Unknown dsps type of " + dsps_type_cd))
+          }
+        }
+
+      if (tagList.nonEmpty)
+        tagList.reduce((x1, x2) => x1 ++ x2)
+      else
+        Map[String, String]()
+    }).filter(_._2.nonEmpty)
   }
 
   def exportResult(tableName: String, finalResult: RDD[(String, Map[String, String])]): Unit = {
@@ -572,7 +578,6 @@ case class NumIndexResult(numIndices: Map[String, BigDecimal], today: Date) {
                        indexRule: (String, String),
                        indexValues: Map[String, BigDecimal]
                       ): Map[String, BigDecimal] = {
-    println("The date str to parse = [" + customerProdGrpIndexData.Statt_Dt + "]")
     val indexDate = dateFormat.parse(customerProdGrpIndexData.Statt_Dt)
     val indexCalcMode = indexRule._2
 
@@ -581,11 +586,11 @@ case class NumIndexResult(numIndices: Map[String, BigDecimal], today: Date) {
       customerProdGrpIndexData.Statt_Indx_ID + "." +
       indexRule._1 + "." + (
       indexCalcMode match {
-      case "10" => "current"
-      case "20" => "sum7d"
-      case "21" => "sum30d"
-      case _ => "unknown"
-    })
+        case "10" => "current"
+        case "20" => "sum7d"
+        case "21" => "sum30d"
+        case _ => "unknown"
+      })
 
     val indexValue: BigDecimal = indexRule._1 match {
       case "day_indx_val" => customerProdGrpIndexData.Day_Indx_Val
