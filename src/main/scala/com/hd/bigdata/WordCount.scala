@@ -20,9 +20,9 @@ object WordCount {
     val industryClassCode = args(2)
 
     if (args.length > 0 && args(0).equals("local")) {
-      conf = new SparkConf().setAppName("wordcount").setMaster("local[4]")
+      conf = new SparkConf().setAppName("CustomerMetrics").setMaster("local[4]")
     } else {
-      conf = new SparkConf().setAppName("wordcount")
+      conf = new SparkConf().setAppName("CustomerMetrics")
     }
 
     val sc = new SparkContext(conf)
