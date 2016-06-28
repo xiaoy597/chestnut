@@ -80,16 +80,30 @@ class DataTransformer(val sc: SparkContext, val industryClassCode: String, val t
 
     val numIndexData = DataObtain.getIntegratedNumIndexFromHive(industryClassCode, sc)
     if (TransformerConfigure.isDebug) {
-      println("Numeric Index Data:")
+      println("Number of partitions for numeric index data is: " + numIndexData.partitions.length)
+    }
+
+    if (numIndexData.partitions.length > 1000){
+      if (TransformerConfigure.isDebug) {
+        println("Repartition numeric index data from " + numIndexData.partitions.length + "partitions to 1000 partitions.")
+      }
+
+      numIndexData.repartition(1000)
+    }
+
+    if (TransformerConfigure.isDebug) {
+      println("Numeric Souce Data Begin:")
       numIndexData.take(100).foreach(println)
+      println("Numeric Source Data End:")
     }
 
     val combinedIndex = combineIndexDataWithTransformRule(
       numIndexData, flatternedTransFormRulesForNumIndex)
 
     if (TransformerConfigure.isDebug) {
-      println("Numeric Index Data With Transformer Rules:")
+      println("Numeric Source Data With Transformer Rules Begin:")
       combinedIndex.take(100).foreach(println)
+      println("Numeric Source Data With Transformer Rules End:")
     }
 
     // The class field 'today' can't be referenced in this transformation since doing this will cause the
@@ -516,7 +530,7 @@ class DataTransformer(val sc: SparkContext, val industryClassCode: String, val t
       myTable.setWriteBufferSize(10 * 1024 * 1024)
       x.foreach(a => {
 
-        val p = new Put(Bytes.toBytes(a._1))
+        val p = new Put(Bytes.toBytes(a._1.toLong))
         val indices = a._2
         if (indices.nonEmpty) {
           indices.foreach(b => {

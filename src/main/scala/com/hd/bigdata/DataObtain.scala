@@ -60,7 +60,7 @@ object DataObtain {
         }
         //            System.out.println(stattIndxId + "," + dimId + "," + indxCalcMode + "," + sdt+ "," + edt)
 
-        sql += "(Statt_Indx_ID = '" + stattIndxId + "' and Prod_Grp_ID = '" + dimId + "' and Data_dt <= '" + edt + "' and Data_dt > '" + sdt + "' ) or \n"
+        sql += "(Statt_Indx_ID = '" + stattIndxId + "' and Prod_Grp_ID = '" + dimId + "' and statt_dt <= '" + edt + "' and statt_dt > '" + sdt + "' ) or \n"
 
       }
       sql = sql.substring(0, sql.length - 4)
@@ -130,7 +130,7 @@ object DataObtain {
             }
             //            System.out.println(stattIndxId + "," + dimId + "," + indxCalcMode + "," + sdt+ "," + edt)
 
-            sql += "(Statt_Indx_ID = '" + stattIndxId + "' and Prod_Grp_ID = '" + dimId + "' and Data_dt <= '" + edt + "' and Data_dt > '" + sdt + "' ) or \n"
+            sql += "(Statt_Indx_ID = '" + stattIndxId + "' and Prod_Grp_ID = '" + dimId + "' and statt_dt <= '" + edt + "' and statt_dt > '" + sdt + "' ) or \n"
 
           }
           sql = sql.substring(0, sql.length - 4)
@@ -442,7 +442,7 @@ object DataObtain {
     val getSrcDataStmt = getSqlForNumIndexData(industryClassCode)
     println(getSrcDataStmt)
 
-    val dataFrame = sqlContext.sql(getSrcDataStmt);
+    val dataFrame = sqlContext.sql(getSrcDataStmt) //.coalesce(256)
 
     println("Sample Data: ")
     dataFrame.show(10)

@@ -34,26 +34,30 @@ object WordCount {
 
     val numIndex = transformer.produceNumIndex()
     if (TransformerConfigure.isDebug) {
-      println("Numeric Index Data:")
+      println("Numeric Metrics Data Begin:")
       numIndex.take(100).foreach(println)
+      println("Numeric Metrics Data End:")
     }
 
     val flagIndex = transformer.produceFlagIndex()
     if (TransformerConfigure.isDebug) {
-      println("Flag Index Data:")
+      println("Flag Metrics Data Begin:")
       flagIndex.take(100).foreach(println)
+      println("Flag Metrics Data End:")
     }
 
     val commonIndex = transformer.produceCommonFlagIndex()
     if (TransformerConfigure.isDebug) {
-      println("Common Flag Index Data:")
+      println("Common Flag Metrics Data Begin:")
       commonIndex.take(100).foreach(println)
+      println("Common Flag Metrics Data End:")
     }
 
     val finalIndex = transformer.produceFinalIndex(numIndex, flagIndex, commonIndex)
     if (TransformerConfigure.isDebug) {
-      println("Final Index Data:")
+      println("Final Metrics Data Begin:")
       finalIndex.take(100).foreach(println)
+      println("Final Metrics Data End:")
     }
 
     if (args(0).equals("cluster")) {
@@ -63,13 +67,14 @@ object WordCount {
 
     val discretIndex = transformer.produceDiscreteIndex(finalIndex)
     if (TransformerConfigure.isDebug) {
-      println("Discrete Index Data:")
+      println("Discretized Metrics Data Begin:")
       discretIndex.take(100).foreach(println)
+      println("Discretized Metrics Data End:")
     }
 
     if (args(0).equals("cluster")) {
       transformer.exportResult("user_discrete_metrics_test", discretIndex)
-      println("Discrete user metrics data exported to HBase.")
+      println("Discretized user metrics data exported to HBase.")
     }
 
     sc.stop()
