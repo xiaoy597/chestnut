@@ -51,7 +51,7 @@ case class RuleCondition(
 case class DspsRule(
                      flat_tbl_nm: String,
                      flat_clmn_nm: String,
-                     tag_id: Int,
+                     tag_ctgy_id: Int,
                      dsps_alg_id: String,
                      dsps_alg_type_cd: String,
                      dsps_rules: String
@@ -105,12 +105,12 @@ object FlatConfig {
 
     val itemList = ListBuffer[DspsRule]()
 
-    val sql = "SELECT t1.flat_tbl_nm, t1.flat_clmn_nm, t1.tag_id, t1.dsps_alg_id, t2.dsps_alg_type_cd , " +
+    val sql = "SELECT t1.flat_tbl_nm, t1.flat_clmn_nm, t1.tag_ctgy_id, t1.dsps_alg_id, t2.dsps_alg_type_cd , " +
       " group_concat(t3.rule_para_value order by t3.rule_para_seq) as dsps_rules " +
       "FROM h50_dsps_tag_mapping t1 " +
       "join h50_dsps_alg_info t2 on t1.dsps_alg_id = t2.dsps_alg_id " +
       "join h50_dsps_alg_rule_para t3 on t1.dsps_alg_id = t3.dsps_alg_id " +
-      "GROUP BY t1.flat_tbl_nm, t1.flat_clmn_nm, t1.tag_id, t1.dsps_alg_id, t2.dsps_alg_type_cd"
+      "GROUP BY t1.flat_tbl_nm, t1.flat_clmn_nm, t1.tag_ctgy_id, t1.dsps_alg_id, t2.dsps_alg_type_cd"
 
     println("SQL for getting dsps rules: [" + sql + "]")
 
@@ -124,7 +124,7 @@ object FlatConfig {
         itemList += DspsRule(
           rs.getString("flat_tbl_nm"),
           rs.getString("flat_clmn_nm"),
-          rs.getInt("tag_id"),
+          rs.getInt("tag_ctgy_id"),
           rs.getString("dsps_alg_id"),
           rs.getString("dsps_alg_type_cd"),
           rs.getString("dsps_rules"))

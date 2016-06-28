@@ -387,7 +387,7 @@ class DataTransformer(val sc: SparkContext, val industryClassCode: String, val t
   : RDD[(String, Map[String, String])] = {
 
     val dspsRules = FlatConfig.getDspsRule().map(
-      x => x.flat_clmn_nm ->(x.dsps_alg_type_cd, x.dsps_rules.split(','), x.tag_id.toString)).toMap
+      x => x.flat_clmn_nm ->(x.dsps_alg_type_cd, x.dsps_rules.split(','), x.tag_ctgy_id.toString)).toMap
 
     if (TransformerConfigure.isDebug) {
       println("Rules for generating discrete metrics: ")
@@ -431,6 +431,7 @@ class DataTransformer(val sc: SparkContext, val industryClassCode: String, val t
         dsps_type_cd = dspsRules(idx)._1
         paramList = dspsRules(idx)._2
         tagName = "ctgy_" + dspsRules(idx)._3
+        tagId = dspsRules(idx)._3
         idxValueStr = indexMap(idx)
       }
         yield {
@@ -442,9 +443,9 @@ class DataTransformer(val sc: SparkContext, val industryClassCode: String, val t
                 lowerBound = BigDecimal(paramList(2 * i))
                 upperBound = BigDecimal(paramList(2 * i + 1))
                 if idxValueNum > lowerBound && idxValueNum <= upperBound
-              } yield Map(tagName -> (i + 1).toString))
+              } yield Map(tagName -> (tagId + String.format("%02d", new Integer(i + 1)))))
               if (hitSegList.isEmpty)
-                Map(tagName -> (paramList.length / 2 + 1).toString)
+                Map(tagName -> (tagId + String.format("%02d", new Integer(paramList.length / 2 + 1))))
               else
                 hitSegList.last
 
@@ -454,20 +455,20 @@ class DataTransformer(val sc: SparkContext, val industryClassCode: String, val t
               val idxValueNum = BigDecimal(indexMap(idx))
               val stepValue = BigDecimal(paramList(2))
               if (idxValueNum < lowerBound || idxValueNum > upperBound)
-                Map(tagName -> indexMap(idx))
+                Map(tagName -> ("Out of bound -> " + indexMap(idx)))
               else
-                Map(tagName -> ((idxValueNum - lowerBound) / stepValue).toInt.toString)
+                Map(tagName -> (tagId + String.format("%02d", new Integer(((idxValueNum - lowerBound) / stepValue).toInt))))
             case "30" => // 键值映射/枚举, 参数: 映射表编号
               val mappingTableId = paramList(0)
 
               if (mappingTables.contains(mappingTableId)) {
                 val mapping = mappingTables(mappingTableId)
                 if (mapping.contains(idxValueStr))
-                  Map(tagName -> mapping(idxValueStr))
+                  Map(tagName -> (tagId + mapping(idxValueStr)))
                 else
-                  Map(tagName -> indexMap(idx))
+                  Map(tagName -> ("Missing value for key " + indexMap(idx)))
               } else
-                Map(tagName -> indexMap(idx))
+                Map(tagName -> ("Missing mapping class " + mappingTableId))
 
             case _ => // 未识别的离散模式
               Map(tagName -> ("Unknown dsps type of " + dsps_type_cd))

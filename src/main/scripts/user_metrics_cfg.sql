@@ -112,16 +112,15 @@ CREATE TABLE h50_dsps_tag_mapping
 (
   flat_tbl_nm varchar(30) NOT NULL COMMENT '扁平表名称 自动生成，根据扁平化方式不同 直接：指标表表名+指标表字段名 行转列：维度ID+指标ID+度量字段名',
   flat_clmn_nm  varchar(100) NOT NULL COMMENT '扁平表字段名称',
-  tag_id  int COMMENT '标签ID',
+  tag_ctgy_id  int COMMENT '标签ID',
   dsps_alg_id  varchar(30)  COMMENT '离散化算法ID',
   created_ts  datetime  COMMENT '创建时间',
   updated_ts  datetime  COMMENT '最近更新时间',
-  PRIMARY KEY (`flat_tbl_nm`,`flat_clmn_nm`,`tag_id`)
+  PRIMARY KEY (`flat_tbl_nm`,`flat_clmn_nm`,`tag_ctgy_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT '离散化标签映射表';
 
-insert into h50_dsps_tag_mapping values ('user_metrics_test', 'metric.MSMGRP010101.MSMIDX0102.day_indx_val.current', 1, 'DSPS_ALG_0001', '2016-05-23 08:00:00', '2016-05-23 08:00:00');
-#insert into h50_dsps_tag_mapping values ('user_metrics_test', 'idx_MSMGRP010104MSMIDX0705Day_Indx_Val21', 2, 'DSPS_ALG_0002', '2016-05-23 08:00:00', '2016-05-23 08:00:00');
-insert into h50_dsps_tag_mapping values ('user_metrics_test', 'h52_estt_cust_integrate_info.hous_nums', 3, 'DSPS_ALG_0003', '2016-05-23 08:00:00', '2016-05-23 08:00:00');
+# insert into h50_dsps_tag_mapping values ('user_metrics_test', 'metric.MSMGRP010101.MSMIDX0102.day_indx_val.current', 1, 'DSPS_ALG_0001', '2016-05-23 08:00:00', '2016-05-23 08:00:00');
+# insert into h50_dsps_tag_mapping values ('user_metrics_test', 'h52_estt_cust_integrate_info.hous_nums', 3, 'DSPS_ALG_0003', '2016-05-23 08:00:00', '2016-05-23 08:00:00');
 
 
 DROP TABLE h50_dsps_alg_info;
@@ -135,9 +134,9 @@ CREATE TABLE h50_dsps_alg_info
   PRIMARY KEY (`dsps_alg_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT '离散化算法信息表';
 
-insert into h50_dsps_alg_info values ('DSPS_ALG_0001', '', '10', '2016-05-23 08:00:00', '2016-05-23 08:00:00');
-insert into h50_dsps_alg_info values ('DSPS_ALG_0002', '', '40', '2016-05-23 08:00:00', '2016-05-23 08:00:00');
-insert into h50_dsps_alg_info values ('DSPS_ALG_0003', '', '30', '2016-05-23 08:00:00', '2016-05-23 08:00:00');
+# insert into h50_dsps_alg_info values ('DSPS_ALG_0001', '', '10', '2016-05-23 08:00:00', '2016-05-23 08:00:00');
+# insert into h50_dsps_alg_info values ('DSPS_ALG_0002', '', '40', '2016-05-23 08:00:00', '2016-05-23 08:00:00');
+# insert into h50_dsps_alg_info values ('DSPS_ALG_0003', '', '30', '2016-05-23 08:00:00', '2016-05-23 08:00:00');
 
 
 DROP TABLE h50_dsps_alg_rule_para;
@@ -151,16 +150,16 @@ CREATE TABLE h50_dsps_alg_rule_para
   PRIMARY KEY (`dsps_alg_id`, `rule_para_seq`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT '离散化算法规则参数表';
 
-insert into h50_dsps_alg_rule_para values ('DSPS_ALG_0001', 1, '0', '2016-05-23 08:00:00', '2016-05-23 08:00:00');
-insert into h50_dsps_alg_rule_para values ('DSPS_ALG_0001', 2, '1000', '2016-05-23 08:00:00', '2016-05-23 08:00:00');
-insert into h50_dsps_alg_rule_para values ('DSPS_ALG_0001', 3, '1000', '2016-05-23 08:00:00', '2016-05-23 08:00:00');
-insert into h50_dsps_alg_rule_para values ('DSPS_ALG_0001', 4, '5000', '2016-05-23 08:00:00', '2016-05-23 08:00:00');
-insert into h50_dsps_alg_rule_para values ('DSPS_ALG_0001', 5, '5000', '2016-05-23 08:00:00', '2016-05-23 08:00:00');
-insert into h50_dsps_alg_rule_para values ('DSPS_ALG_0001', 6, '10000', '2016-05-23 08:00:00', '2016-05-23 08:00:00');
-insert into h50_dsps_alg_rule_para values ('DSPS_ALG_0002', 1, '0', '2016-05-23 08:00:00', '2016-05-23 08:00:00');
-insert into h50_dsps_alg_rule_para values ('DSPS_ALG_0002', 2, '100000', '2016-05-23 08:00:00', '2016-05-23 08:00:00');
-insert into h50_dsps_alg_rule_para values ('DSPS_ALG_0002', 3, '1000', '2016-05-23 08:00:00', '2016-05-23 08:00:00');
-insert into h50_dsps_alg_rule_para values ('DSPS_ALG_0003', 1, '02', '2016-05-23 08:00:00', '2016-05-23 08:00:00');
+# insert into h50_dsps_alg_rule_para values ('DSPS_ALG_0001', 1, '0', '2016-05-23 08:00:00', '2016-05-23 08:00:00');
+# insert into h50_dsps_alg_rule_para values ('DSPS_ALG_0001', 2, '1000', '2016-05-23 08:00:00', '2016-05-23 08:00:00');
+# insert into h50_dsps_alg_rule_para values ('DSPS_ALG_0001', 3, '1000', '2016-05-23 08:00:00', '2016-05-23 08:00:00');
+# insert into h50_dsps_alg_rule_para values ('DSPS_ALG_0001', 4, '5000', '2016-05-23 08:00:00', '2016-05-23 08:00:00');
+# insert into h50_dsps_alg_rule_para values ('DSPS_ALG_0001', 5, '5000', '2016-05-23 08:00:00', '2016-05-23 08:00:00');
+# insert into h50_dsps_alg_rule_para values ('DSPS_ALG_0001', 6, '10000', '2016-05-23 08:00:00', '2016-05-23 08:00:00');
+# insert into h50_dsps_alg_rule_para values ('DSPS_ALG_0002', 1, '0', '2016-05-23 08:00:00', '2016-05-23 08:00:00');
+# insert into h50_dsps_alg_rule_para values ('DSPS_ALG_0002', 2, '100000', '2016-05-23 08:00:00', '2016-05-23 08:00:00');
+# insert into h50_dsps_alg_rule_para values ('DSPS_ALG_0002', 3, '1000', '2016-05-23 08:00:00', '2016-05-23 08:00:00');
+# insert into h50_dsps_alg_rule_para values ('DSPS_ALG_0003', 1, '02', '2016-05-23 08:00:00', '2016-05-23 08:00:00');
 
 DROP TABLE h50_dsps_alg_type;
 CREATE TABLE h50_dsps_alg_type
@@ -185,9 +184,6 @@ CREATE TABLE h50_dsps_alg_rule
 (
   dsps_alg_rule_cd  char(2) NOT NULL COMMENT '离散化算法规则代码',
   dsps_alg_rule_desc  varchar(100) COMMENT '离散化算法规则描述 ',
-  -- 10：#上限值#下限值#，左开右闭
-  -- 20：#参数1#参数2#参数3# 等量：#上限值#下限值#，左开右闭
-  -- 30：#起始值#终止值#步长#，左开右闭',
   created_ts  datetime  COMMENT '创建时间',
   updated_ts  datetime  COMMENT '最近更新时间',
   PRIMARY KEY (`dsps_alg_rule_cd`)
@@ -196,7 +192,7 @@ CREATE TABLE h50_dsps_alg_rule
 DROP TABLE h50_dsps_mapping_para;
 CREATE TABLE h50_dsps_mapping_para
 (
-  dsps_mapping_para_class     char(2) NOT NULL COMMENT '映射参数类别',
+  dsps_mapping_para_class     varchar(8) NOT NULL COMMENT '映射参数类别',
   dsps_mapping_para_key       varchar(100) NOT NULL COMMENT '映射键',
   dsps_mapping_para_value     varchar(100) NOT NULL COMMENT '映射值',
   created_ts  datetime  COMMENT '创建时间',
@@ -204,19 +200,19 @@ CREATE TABLE h50_dsps_mapping_para
   PRIMARY KEY (`dsps_mapping_para_class`, `dsps_mapping_para_key`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT '离散映射参数表';
 
-insert into h50_dsps_mapping_para values ('01', '00', '0', '2016-05-23 08:00:00', '2016-05-23 08:00:00');
-insert into h50_dsps_mapping_para values ('01', '01', '0', '2016-05-23 08:00:00', '2016-05-23 08:00:00');
-insert into h50_dsps_mapping_para values ('01', '02', '0', '2016-05-23 08:00:00', '2016-05-23 08:00:00');
-insert into h50_dsps_mapping_para values ('01', '10', '1', '2016-05-23 08:00:00', '2016-05-23 08:00:00');
-insert into h50_dsps_mapping_para values ('01', '11', '2', '2016-05-23 08:00:00', '2016-05-23 08:00:00');
-insert into h50_dsps_mapping_para values ('02', '0', 'F', '2016-05-23 08:00:00', '2016-05-23 08:00:00');
-insert into h50_dsps_mapping_para values ('02', '1', 'T', '2016-05-23 08:00:00', '2016-05-23 08:00:00');
-insert into h50_dsps_mapping_para values ('02', '2', 'T', '2016-05-23 08:00:00', '2016-05-23 08:00:00');
-insert into h50_dsps_mapping_para values ('02', '3', 'T', '2016-05-23 08:00:00', '2016-05-23 08:00:00');
-insert into h50_dsps_mapping_para values ('02', '4', 'T', '2016-05-23 08:00:00', '2016-05-23 08:00:00');
-insert into h50_dsps_mapping_para values ('02', '5', 'T', '2016-05-23 08:00:00', '2016-05-23 08:00:00');
-insert into h50_dsps_mapping_para values ('02', '6', 'T', '2016-05-23 08:00:00', '2016-05-23 08:00:00');
-insert into h50_dsps_mapping_para values ('02', '7', 'T', '2016-05-23 08:00:00', '2016-05-23 08:00:00');
-insert into h50_dsps_mapping_para values ('02', '8', 'T', '2016-05-23 08:00:00', '2016-05-23 08:00:00');
+# insert into h50_dsps_mapping_para values ('01', '00', '0', '2016-05-23 08:00:00', '2016-05-23 08:00:00');
+# insert into h50_dsps_mapping_para values ('01', '01', '0', '2016-05-23 08:00:00', '2016-05-23 08:00:00');
+# insert into h50_dsps_mapping_para values ('01', '02', '0', '2016-05-23 08:00:00', '2016-05-23 08:00:00');
+# insert into h50_dsps_mapping_para values ('01', '10', '1', '2016-05-23 08:00:00', '2016-05-23 08:00:00');
+# insert into h50_dsps_mapping_para values ('01', '11', '2', '2016-05-23 08:00:00', '2016-05-23 08:00:00');
+# insert into h50_dsps_mapping_para values ('02', '0', 'F', '2016-05-23 08:00:00', '2016-05-23 08:00:00');
+# insert into h50_dsps_mapping_para values ('02', '1', 'T', '2016-05-23 08:00:00', '2016-05-23 08:00:00');
+# insert into h50_dsps_mapping_para values ('02', '2', 'T', '2016-05-23 08:00:00', '2016-05-23 08:00:00');
+# insert into h50_dsps_mapping_para values ('02', '3', 'T', '2016-05-23 08:00:00', '2016-05-23 08:00:00');
+# insert into h50_dsps_mapping_para values ('02', '4', 'T', '2016-05-23 08:00:00', '2016-05-23 08:00:00');
+# insert into h50_dsps_mapping_para values ('02', '5', 'T', '2016-05-23 08:00:00', '2016-05-23 08:00:00');
+# insert into h50_dsps_mapping_para values ('02', '6', 'T', '2016-05-23 08:00:00', '2016-05-23 08:00:00');
+# insert into h50_dsps_mapping_para values ('02', '7', 'T', '2016-05-23 08:00:00', '2016-05-23 08:00:00');
+# insert into h50_dsps_mapping_para values ('02', '8', 'T', '2016-05-23 08:00:00', '2016-05-23 08:00:00');
 
 
