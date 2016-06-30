@@ -5,6 +5,7 @@ package com.hd.bigdata.utils
   */
 object TransformerConfigure {
 
-  val isDebug = true
+  var isDebug = false
+  var export2Redis = false
 
 }

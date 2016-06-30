@@ -90,7 +90,7 @@ object TestData {
         CustomerProdGrpIndexData(
           "2016-04-20",
           "00",
-          "CUST00000002",
+          2,
           "PRD000002",
           "IDX000002",
           100,
@@ -108,7 +108,7 @@ object TestData {
         CustomerProdGrpIndexData(
           "2016-05-10",
           "00",
-          "CUST00000002",
+          2,
           "PRD000002",
           "IDX000001",
           100,
@@ -126,7 +126,7 @@ object TestData {
         CustomerProdGrpIndexData(
           "2016-05-10",
           "00",
-          "CUST00000001",
+          1,
           "PRD000001",
           "IDX000001",
           100,
@@ -144,7 +144,7 @@ object TestData {
         CustomerProdGrpIndexData(
           "2016-05-09",
           "00",
-          "CUST00000001",
+          1,
           "PRD000001",
           "IDX000001",
           101,
@@ -162,7 +162,7 @@ object TestData {
         CustomerProdGrpIndexData(
           "2016-05-09",
           "00",
-          "CUST00000001",
+          1,
           "PRD000003",
           "IDX000001",
           101,
@@ -180,7 +180,7 @@ object TestData {
         CustomerProdGrpIndexData(
           "2016-04-09",
           "00",
-          "CUST00000001",
+          1,
           "PRD000001",
           "IDX000001",
           101,
@@ -203,7 +203,7 @@ object TestData {
   def getSoccerIndexData(sc: SparkContext): RDD[SoccerIndexData] = {
     sc.parallelize(List(
       SoccerIndexData(
-        "CUST00000001" //统一客户编号
+        1 //统一客户编号
         , "2010-02-02" //首次购买单场票时间
         , "2015-05-09" //最近一次购买单场票时间
         , "2013-04-23" //首次购买套票时间
