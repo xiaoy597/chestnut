@@ -3,6 +3,7 @@ package com.hd.bigdata
 import java.text.SimpleDateFormat
 import java.util.{Calendar, Date}
 
+import com.evergrande.hdmp.hbase.{ProjectConfig, RedisOperUtil}
 import com.hd.bigdata.utils.TransformerConfigure
 import org.apache.hadoop.hbase.client.{HTable, Put}
 import org.apache.hadoop.hbase.util.Bytes
@@ -14,7 +15,7 @@ import org.apache.spark.rdd.RDD
   * Created by Yu on 16/5/9.
   */
 
-class DataTransformer(val sc: SparkContext, val industryClassCode: String, val today: Date) {
+class DataTransformer(val sc: SparkContext, val industryClassCode: String, val today: Date, val numPartitions: Int) {
 
   val transformRules = FlatConfig.getFlatRuleConfig(null, industryClassCode).toList
 
@@ -22,27 +23,33 @@ class DataTransformer(val sc: SparkContext, val industryClassCode: String, val t
     transformRules
   }
 
-  def flattenTransformRulesForNumIndex(): RDD[((String, String), Iterable[(String, String)])] = {
+  def flattenTransformRulesForNumIndex(): List[((String, String), Iterable[(String, String)])] = {
 
     val transformRules = getTransformRules
 
-    sc.parallelize(transformRules.filter(_.indx_tbl_nm.equals("h52_inds_statt_indx_rslt_g")))
-      .map(r => ((r.dim_id, r.statt_indx_id), (r.indx_clmn_nm, r.indx_calc_mode_cd)))
-      .groupByKey()
+    //    sc.parallelize(transformRules.filter(_.indx_tbl_nm.equals("h52_inds_statt_indx_rslt_g")))
+    //      .map(r => ((r.dim_id, r.statt_indx_id), (r.indx_clmn_nm, r.indx_calc_mode_cd)))
+    //      .groupByKey()
+
+    transformRules.filter(x => x.indx_tbl_nm.equals("h52_inds_statt_indx_rslt_g"))
+      .groupBy(r => (r.dim_id, r.statt_indx_id))
+      .mapValues(l => {
+        for (r <- l) yield (r.indx_clmn_nm, r.indx_calc_mode_cd)
+      }).toList
   }
 
   def flattenTransformRulesForFlagIndex(): List[(String, String, String, String)] = {
 
     val transformRules = getTransformRules
 
-    transformRules.filter(!_.indx_tbl_nm.equals("h52_inds_statt_indx_rslt_g"))
+    transformRules.filter(x => !x.indx_tbl_nm.equals("h52_inds_statt_indx_rslt_g"))
       .flatMap(r => List((r.indx_tbl_nm, r.indx_clmn_nm, r.inds_cls_cd, r.indx_calc_mode_cd)))
   }
 
 
   def combineIndexDataWithTransformRule(customerProdGrpIndexData: RDD[CustomerProdGrpIndexData],
                                         flatternedTransformRules: RDD[((String, String), Iterable[(String, String)])])
-  : RDD[(String, (CustomerProdGrpIndexData, Iterable[(String, String)]))] = {
+  : RDD[(Long, (CustomerProdGrpIndexData, Iterable[(String, String)]))] = {
 
     //    implicit val sortingByCustIdAndDate = new Ordering[(String, String)] {
     //      def compare(a: (String, String), b: (String, String)) = {
@@ -68,27 +75,30 @@ class DataTransformer(val sc: SparkContext, val industryClassCode: String, val t
 
   type CombinedIndexType = (CustomerProdGrpIndexData, Iterable[(String, String)])
 
-  def produceNumIndex(): RDD[(String, Map[String, String])] = {
+  def produceNumIndex(): RDD[(Long, Map[String, String])] = {
 
     val workdate = today
 
     val flatternedTransFormRulesForNumIndex = flattenTransformRulesForNumIndex()
     if (TransformerConfigure.isDebug) {
-      println("Number of numeric flattened rules = " + flatternedTransFormRulesForNumIndex.count());
-      flatternedTransFormRulesForNumIndex.collect().foreach(println)
+      println("Number of numeric flattened rules = " + flatternedTransFormRulesForNumIndex.length)
+      flatternedTransFormRulesForNumIndex.foreach(println)
     }
 
-    val numIndexData = DataObtain.getIntegratedNumIndexFromHive(industryClassCode, sc)
+    val numIndexData0 = DataObtain.getIntegratedNumIndexFromHive(industryClassCode, sc)
     if (TransformerConfigure.isDebug) {
-      println("Number of partitions for numeric index data is: " + numIndexData.partitions.length)
+      println("Number of partitions for numeric index data is: " + numIndexData0.partitions.length)
     }
 
-    if (numIndexData.partitions.length > 1000){
-      if (TransformerConfigure.isDebug) {
-        println("Repartition numeric index data from " + numIndexData.partitions.length + "partitions to 1000 partitions.")
-      }
-
-      numIndexData.repartition(1000)
+    val numIndexData = {
+      if (numIndexData0.partitions.length > numPartitions * 4 || numIndexData0.partitions.length < numPartitions / 4) {
+        if (TransformerConfigure.isDebug) {
+          println("Repartition numeric index data from " +
+            numIndexData0.partitions.length + " partitions to " + numPartitions + " partitions.")
+        }
+        numIndexData0.repartition(numPartitions).cache()
+      } else
+        numIndexData0.cache()
     }
 
     if (TransformerConfigure.isDebug) {
@@ -98,7 +108,7 @@ class DataTransformer(val sc: SparkContext, val industryClassCode: String, val t
     }
 
     val combinedIndex = combineIndexDataWithTransformRule(
-      numIndexData, flatternedTransFormRulesForNumIndex)
+      numIndexData, sc.parallelize(flatternedTransFormRulesForNumIndex)).cache()
 
     if (TransformerConfigure.isDebug) {
       println("Numeric Source Data With Transformer Rules Begin:")
@@ -119,20 +129,36 @@ class DataTransformer(val sc: SparkContext, val industryClassCode: String, val t
     })
   }
 
-  def produceCommonFlagIndex(): RDD[(String, Map[String, String])] = {
+  def produceCommonFlagIndex(): RDD[(Long, Map[String, String])] = {
 
-    val flattenedTransformRulesForFlagIndex = flattenTransformRulesForFlagIndex().filter(_._1.equals("h52_cust_inds_merge"))
+    val flattenedTransformRulesForFlagIndex = flattenTransformRulesForFlagIndex().filter(x => x._1.equals("h52_cust_inds_merge"))
     if (TransformerConfigure.isDebug) {
       println("Number of common flag flattened rules = " + flattenedTransformRulesForFlagIndex.size)
       for (r <- flattenedTransformRulesForFlagIndex)
         println(r)
     }
 
-    if (flattenedTransformRulesForFlagIndex.size == 0) {
+    if (flattenedTransformRulesForFlagIndex.isEmpty) {
       return sc.emptyRDD
     }
 
-    val commonIndexData = DataObtain.getIntegratedCommonIndexFromHive(sc, industryClassCode).map(x => (x.gu_indv_id, x))
+    val commonIndexData0 = DataObtain.getIntegratedCommonIndexFromHive(sc, industryClassCode).map(x => (x.gu_indv_id, x))
+    if (TransformerConfigure.isDebug) {
+      println("Number of partitions for common flag index data is: " + commonIndexData0.partitions.length)
+    }
+
+    val commonIndexData = {
+      if (commonIndexData0.partitions.length > numPartitions * 2 || commonIndexData0.partitions.length < numPartitions / 2) {
+        if (TransformerConfigure.isDebug) {
+          println("Repartition common flag index data from " +
+            commonIndexData0.partitions.length + " partitions to " + numPartitions + " partitions.")
+        }
+        commonIndexData0.repartition(numPartitions).cache()
+      } else {
+        commonIndexData0.cache()
+      }
+    }
+
     if (TransformerConfigure.isDebug) {
       println("Number of common index data = " + commonIndexData.count())
       commonIndexData.take(100).foreach(println)
@@ -142,7 +168,7 @@ class DataTransformer(val sc: SparkContext, val industryClassCode: String, val t
       val indexList = for ((idxTableName, idxColName, idxIndusClsCode, idxCalcMode) <- flattenedTransformRulesForFlagIndex)
         yield idxTableName + "." + idxColName ->
           (idxColName match {
-            case "gu_indv_id" => commonData.gu_indv_id //  String, // 个人客户统一编号
+            case "gu_indv_id" => commonData.gu_indv_id.toString //  String, // 个人客户统一编号
             case "cust_nm" => commonData.cust_nm //  String, // 客户姓名
             case "idtfy_info" => commonData.idtfy_info //  String, // 身份证号码
             case "birth_dt" => commonData.birth_dt //  String, // 出生日期
@@ -203,22 +229,37 @@ class DataTransformer(val sc: SparkContext, val industryClassCode: String, val t
   }
 
 
-  def produceFlagIndex(): RDD[(String, Map[String, String])] = {
+  def produceFlagIndex(): RDD[(Long, Map[String, String])] = {
 
-    val flattenedTransformRulesForFlagIndex = flattenTransformRulesForFlagIndex().filter(_._3.equals(industryClassCode))
+    val flattenedTransformRulesForFlagIndex = flattenTransformRulesForFlagIndex().filter(x => x._3.equals(industryClassCode))
     if (TransformerConfigure.isDebug) {
       println("Number of flag flattened rules = " + flattenedTransformRulesForFlagIndex.size)
       for (r <- flattenedTransformRulesForFlagIndex)
         println(r)
     }
 
-    if (flattenedTransformRulesForFlagIndex.size == 0) {
+    if (flattenedTransformRulesForFlagIndex.isEmpty) {
       return sc.emptyRDD
     }
 
     industryClassCode match {
       case "1100" => // Estate
-        val estateIndexData = DataObtain.getIntegratedEstateIndexFromHive(sc).map(x => (x.gu_indv_id, x))
+        val estateIndexData0 = DataObtain.getIntegratedEstateIndexFromHive(sc).map(x => (x.gu_indv_id, x))
+        if (TransformerConfigure.isDebug) {
+          println("Number of partitions for flag index data is: " + estateIndexData0.partitions.length)
+        }
+
+        val estateIndexData = {
+          if (estateIndexData0.partitions.length > numPartitions * 4 || estateIndexData0.partitions.length < numPartitions / 2) {
+            if (TransformerConfigure.isDebug) {
+              println("Repartition flag index data from " +
+                estateIndexData0.partitions.length + " partitions to " + numPartitions + " partitions.")
+            }
+            estateIndexData0.repartition(numPartitions).cache()
+          } else
+            estateIndexData0.cache()
+        }
+
         if (TransformerConfigure.isDebug) {
           println("Number of flag index data = " + estateIndexData.count())
           estateIndexData.take(100).foreach(println)
@@ -228,7 +269,7 @@ class DataTransformer(val sc: SparkContext, val industryClassCode: String, val t
           val indexList = for ((idxTableName, idxColName, idxIndusClsCode, idxCalcMode) <- flattenedTransformRulesForFlagIndex)
             yield idxTableName + "." + idxColName ->
               (idxColName match {
-                case "gu_indv_id" => estateData.gu_indv_id //  String, // 个人客户统一编号
+                case "gu_indv_id" => estateData.gu_indv_id.toString //  String, // 个人客户统一编号
                 case "gender_cd" => estateData.gender_cd //  String, // 性别
                 case "age" => estateData.age.toString //  Int, // 年龄
                 case "buy_hous_ind" => estateData.buy_hous_ind.toString //  Int, // 购房用户标志
@@ -261,7 +302,22 @@ class DataTransformer(val sc: SparkContext, val industryClassCode: String, val t
       case "3110" => // Soccer
         //        val soccerIndex = TestData.getSoccerIndexData(sc).map(x => (x.Gu_Indv_Id, x))
 
-        val soccerIndexData = DataObtain.getIntegratedSoccerIndexFromHive(sc).map(x => (x.Gu_Indv_Id, x))
+        val soccerIndexData0 = DataObtain.getIntegratedSoccerIndexFromHive(sc).map(x => (x.Gu_Indv_Id, x))
+        if (TransformerConfigure.isDebug) {
+          println("Number of partitions for flag index data is: " + soccerIndexData0.partitions.length)
+        }
+
+        val soccerIndexData = {
+          if (soccerIndexData0.partitions.length > numPartitions * 2 || soccerIndexData0.partitions.length < numPartitions / 2) {
+            if (TransformerConfigure.isDebug) {
+              println("Repartition flag index data from " +
+                soccerIndexData0.partitions.length + " partitions to " + numPartitions + " partitions.")
+            }
+            soccerIndexData0.repartition(numPartitions).cache()
+          } else
+            soccerIndexData0.cache()
+        }
+
         if (TransformerConfigure.isDebug) {
           println("Number of flag index data = " + soccerIndexData.count())
           soccerIndexData.take(100).foreach(println)
@@ -297,7 +353,22 @@ class DataTransformer(val sc: SparkContext, val industryClassCode: String, val t
         soccerIndex.filter(x => x._2.nonEmpty)
 
       case "2000" =>
-        val hotelIndexData = DataObtain.getIntegratedHotelIndexFromHive(sc).map(x => (x.gu_indv_id, x))
+        val hotelIndexData0 = DataObtain.getIntegratedHotelIndexFromHive(sc).map(x => (x.gu_indv_id, x))
+
+        if (TransformerConfigure.isDebug) {
+          println("Number of partitions for flag index data is: " + hotelIndexData0.partitions.length)
+        }
+
+        val hotelIndexData = {
+          if (hotelIndexData0.partitions.length > numPartitions * 2 || hotelIndexData0.partitions.length < numPartitions / 2) {
+            if (TransformerConfigure.isDebug) {
+              println("Repartition flag index data from " +
+                hotelIndexData0.partitions.length + " partitions to " + numPartitions + " partitions.")
+            }
+            hotelIndexData0.repartition(numPartitions).cache()
+          } else
+            hotelIndexData0.cache()
+        }
 
         if (TransformerConfigure.isDebug) {
           println("Number of flag index data = " + hotelIndexData.count())
@@ -308,7 +379,7 @@ class DataTransformer(val sc: SparkContext, val industryClassCode: String, val t
           val indexList = for ((idxTableName, idxColName, idxIndusClsCode, idxCalcMode) <- flattenedTransformRulesForFlagIndex)
             yield idxTableName + "." + idxColName ->
               (idxColName match {
-                case "gu_indv_id" => hotelData.gu_indv_id // string,
+                case "gu_indv_id" => hotelData.gu_indv_id.toString // string,
                 case "hotel_mem_ind" => hotelData.hotel_mem_ind.toString // smallint,
                 case "lodger_ind" => hotelData.lodger_ind.toString // smallint,
                 case "bevrg_cust_ind" => hotelData.bevrg_cust_ind.toString // smallint,
@@ -368,10 +439,10 @@ class DataTransformer(val sc: SparkContext, val industryClassCode: String, val t
     }
   }
 
-  def produceFinalIndex(numIndexRDD: RDD[(String, Map[String, String])],
-                        flagIndexRDD: RDD[(String, Map[String, String])],
-                        commonIndexRDD: RDD[(String, Map[String, String])])
-  : RDD[(String, Map[String, String])] = {
+  def produceFinalIndex(numIndexRDD: RDD[(Long, Map[String, String])],
+                        flagIndexRDD: RDD[(Long, Map[String, String])],
+                        commonIndexRDD: RDD[(Long, Map[String, String])])
+  : RDD[(Long, Map[String, String])] = {
 
     //    numIndexRDD.cogroup(flagIndexRDD).mapValues(x => {
     //      var finalMap = Map[String, String]()
@@ -397,11 +468,11 @@ class DataTransformer(val sc: SparkContext, val industryClassCode: String, val t
   }
 
   // Convert the user metrics to discrete value according to defined rules.
-  def produceDiscreteIndex(originalIndex: RDD[(String, Map[String, String])])
-  : RDD[(String, Map[String, String])] = {
+  def produceDiscreteIndex(originalIndex: RDD[(Long, Map[String, String])])
+  : RDD[(Long, Map[String, String])] = {
 
     val dspsRules = FlatConfig.getDspsRule().map(
-      x => x.flat_clmn_nm ->(x.dsps_alg_type_cd, x.dsps_rules.split(','), x.tag_ctgy_id.toString)).toMap
+      x => x.flat_clmn_nm.toLowerCase ->(x.dsps_alg_type_cd, x.dsps_rules.split(','), x.tag_ctgy_id.toString)).toMap
 
     if (TransformerConfigure.isDebug) {
       println("Rules for generating discrete metrics: ")
@@ -437,7 +508,7 @@ class DataTransformer(val sc: SparkContext, val industryClassCode: String, val t
       println("Mapping tables: " + mappingTables)
     }
 
-    originalIndex.mapValues(indexMap => {
+    val discreteIndex = originalIndex.mapValues(indexMap => {
       val idxsToConvert = indexMap.keySet & dspsRules.keySet
 
       val tagList = for {
@@ -452,14 +523,14 @@ class DataTransformer(val sc: SparkContext, val industryClassCode: String, val t
           dsps_type_cd match {
             case "10" => // 按需求分段, 参数: 分段1下限, 分段1上限, 分段2下限, 分段2上限, ...
               val idxValueNum = BigDecimal(indexMap(idx))
-              val hitSegList = (for {
+              val hitSegList = for {
                 i <- 0 until paramList.length / 2
                 lowerBound = BigDecimal(paramList(2 * i))
                 upperBound = BigDecimal(paramList(2 * i + 1))
                 if idxValueNum > lowerBound && idxValueNum <= upperBound
-              } yield Map(tagName -> (tagId + String.format("%02d", new Integer(i + 1)))))
+              } yield Map(tagName -> (tagId + "%02d".format(i + 1)))
               if (hitSegList.isEmpty)
-                Map(tagName -> (tagId + String.format("%02d", new Integer(paramList.length / 2 + 1))))
+                Map(tagName -> (tagId + "%02d".format(paramList.length / 2 + 1)))
               else
                 hitSegList.last
 
@@ -471,7 +542,7 @@ class DataTransformer(val sc: SparkContext, val industryClassCode: String, val t
               if (idxValueNum < lowerBound || idxValueNum > upperBound)
                 Map(tagName -> ("Out of bound -> " + indexMap(idx)))
               else
-                Map(tagName -> (tagId + String.format("%02d", new Integer(((idxValueNum - lowerBound) / stepValue).toInt))))
+                Map(tagName -> (tagId + "%02d".format(((idxValueNum - lowerBound) / stepValue).toInt)))
             case "30" => // 键值映射/枚举, 参数: 映射表编号
               val mappingTableId = paramList(0)
 
@@ -493,56 +564,156 @@ class DataTransformer(val sc: SparkContext, val industryClassCode: String, val t
         tagList.reduce((x1, x2) => x1 ++ x2)
       else
         Map[String, String]()
-    }).filter(_._2.nonEmpty)
-  }
-
-  def exportResult(tableName: String, finalResult: RDD[(String, Map[String, String])]): Unit = {
+    }).filter(_._2.nonEmpty).cache()
 
     if (TransformerConfigure.isDebug) {
-      val badRecordSet = finalResult.filter(x => x._1 == null || x._2 == null || x._2.isEmpty)
-      val badCount = badRecordSet.count()
-      if (badCount > 0) {
-        println("There are " + badCount + " metrics records have empty field set, write to HBase is canceled.")
-        val badCount1 = badRecordSet.filter(x => x._1 == null).count()
-        val badCount2 = badRecordSet.filter(x => x._2 == null).count()
-        val badCount3 = badRecordSet.filter(x => x._2.isEmpty).count()
-        println("BadCount1=" + badCount1 + ", BadCount2=" + badCount2 + ", BadCount3=" + badCount3)
-        if (badCount1 > 0) {
-          println("Bad1")
-          badRecordSet.filter(x => x._1 == null).collect().foreach(println)
-        }
-        if (badCount2 > 0) {
-          println("Bad2")
-          badRecordSet.filter(x => x._2 == null).collect().foreach(println)
-        }
-        if (badCount3 > 0) {
-          println("Bad3")
-          badRecordSet.filter(x => x._2.isEmpty).collect().foreach(println)
-        }
-        return
-      }
+      println("Records failed to be discretized: ")
+      discreteIndex
+        .flatMap(r =>
+          for (i <- r._2; if i._2.startsWith("Missing") || i._2.startsWith("Unknown")) yield i
+        ).aggregateByKey(Set[String]())((u, v) => u + v, (u1, u2) => u1 ++ u2)
+        .collect().foreach(println)
     }
 
-    finalResult.foreachPartition(x => {
+    println("Sum of tags:")
+    discreteIndex
+      .flatMap(r => for (i <- r._2) yield (i._2, 1))
+      .reduceByKey(_ + _)
+      .collect().sortBy(_._1).foreach(println)
+
+    discreteIndex
+  }
+
+  def export2Redis(finalResult: RDD[(Long, Map[String, String])]): Unit = {
+    if (TransformerConfigure.isDebug) {
+      println("Number of partitions in RDD to be exported to Redis is " + finalResult.partitions.length)
+    }
+
+    val rddToExport = {
+      if (finalResult.partitions.length > 32) {
+        if (TransformerConfigure.isDebug)
+          println("Repartition RDD to be exported to 16 partitions.")
+
+        finalResult.coalesce(16)
+      } else
+        finalResult
+    }.cache()
+
+    val metricsCount2Redis = sc.accumulator(0)
+    val custCount2Redis = sc.accumulator(0)
+
+    // Write to Redis
+    rddToExport.foreachPartition(partition => {
+      try {
+        val jedis = RedisOperUtil.getJedis
+        var nRow: Int = 0
+        if (jedis == null) {
+          println("Failed to get Jedis resource!")
+        } else {
+          var pipeline = jedis.pipelined()
+          var i: Int = 0
+          partition.foreach(row => {
+            for (metric <- row._2; redisKey = ProjectConfig.KEY_PREFIX + metric._2) {
+              pipeline.setbit(redisKey, row._1, true)
+              i += 1
+              metricsCount2Redis += 1
+              if (i == 1000000) {
+                pipeline.sync()
+                pipeline = jedis.pipelined()
+                i = 0
+              }
+            }
+            custCount2Redis += 1
+          })
+
+          pipeline.sync()
+          pipeline = jedis.pipelined()
+          RedisOperUtil.returnResource(jedis)
+        }
+      } catch {
+        case e: Exception =>
+          println("Exception raised in exporting tags to Redis.")
+      }
+    })
+
+    println("Totally " + custCount2Redis.value + " customers with "
+      + metricsCount2Redis.value + " metrics written to Redis.")
+  }
+
+  def export2HBase(tableName: String, finalResult: RDD[(Long, Map[String, String])]): Unit = {
+
+    //    if (TransformerConfigure.isDebug) {
+    //      val badRecordSet = finalResult.filter(x => x._1 == null || x._2 == null || x._2.isEmpty)
+    //      val badCount = badRecordSet.count()
+    //      if (badCount > 0) {
+    //        println("There are " + badCount + " metrics records have empty field set, write to HBase is canceled.")
+    //        val badCount1 = badRecordSet.filter(x => x._1 == null).count()
+    //        val badCount2 = badRecordSet.filter(x => x._2 == null).count()
+    //        val badCount3 = badRecordSet.filter(x => x._2.isEmpty).count()
+    //        println("BadCount1=" + badCount1 + ", BadCount2=" + badCount2 + ", BadCount3=" + badCount3)
+    //        if (badCount1 > 0) {
+    //          println("Bad1")
+    //          badRecordSet.filter(x => x._1 == null).collect().foreach(println)
+    //        }
+    //        if (badCount2 > 0) {
+    //          println("Bad2")
+    //          badRecordSet.filter(x => x._2 == null).collect().foreach(println)
+    //        }
+    //        if (badCount3 > 0) {
+    //          println("Bad3")
+    //          badRecordSet.filter(x => x._2.isEmpty).collect().foreach(println)
+    //        }
+    //        return
+    //      }
+    //    }
+
+
+    if (TransformerConfigure.isDebug) {
+      println("Number of partitions in RDD to be exported to HBase is " + finalResult.partitions.length)
+    }
+
+    val rddToExport = {
+      if (finalResult.partitions.length > 32) {
+        if (TransformerConfigure.isDebug)
+          println("Repartition RDD to be exported to 16 partitions.")
+
+        finalResult.coalesce(16)
+      } else
+        finalResult
+    }.cache()
+
+    val metricsCount2HBase = sc.accumulator(0)
+    val custCount2HBase = sc.accumulator(0)
+
+    // Write to HBase
+    rddToExport.foreachPartition(x => {
       val myConf = HBaseConfiguration.create()
       val myTable = new HTable(myConf, TableName.valueOf(tableName))
       myTable.setAutoFlush(false, false)
-      myTable.setWriteBufferSize(10 * 1024 * 1024)
+      myTable.setWriteBufferSize(64 * 1024 * 1024)
       x.foreach(a => {
 
-        val p = new Put(Bytes.toBytes(a._1.toLong))
+        val p = new Put(Bytes.toBytes(a._1))
+
         val indices = a._2
         if (indices.nonEmpty) {
           indices.foreach(b => {
             p.add("cf".getBytes, Bytes.toBytes(b._1), Bytes.toBytes(b._2))
+            metricsCount2HBase += 1
           })
           myTable.put(p)
         } else {
           println("WARNING!!! No metrics found for " + a._1.toString)
         }
+
+        custCount2HBase += 1
       })
       myTable.flushCommits()
     })
+
+    println("Totally " + custCount2HBase.value + " customers with "
+      + metricsCount2HBase.value + " metrics written to HBase.")
+
   }
 }
 
@@ -597,8 +768,8 @@ case class NumIndexResult(numIndices: Map[String, BigDecimal], today: Date) {
     val indexCalcMode = indexRule._2
 
     val targetIndexName = "metric" + "." +
-      customerProdGrpIndexData.Prod_Grp_ID + "." +
-      customerProdGrpIndexData.Statt_Indx_ID + "." +
+      customerProdGrpIndexData.Prod_Grp_ID.toLowerCase + "." +
+      customerProdGrpIndexData.Statt_Indx_ID.toLowerCase + "." +
       indexRule._1 + "." + (
       indexCalcMode match {
         case "10" => "current"

@@ -6,7 +6,7 @@ package com.hd.bigdata
 case class CustomerProdGrpIndexData(
                                      Statt_Dt: String,
                                      Statt_Dt_Typ_Cd: String,
-                                     Gu_Indv_Id: String,
+                                     Gu_Indv_Id: Long,
                                      Prod_Grp_ID: String,
                                      Statt_Indx_ID: String,
                                      Day_Indx_Val: BigDecimal,
@@ -23,7 +23,7 @@ case class CustomerProdGrpIndexData(
                                    )
 
 case class SoccerIndexData(
-                            Gu_Indv_Id: String //统一客户编号
+                            Gu_Indv_Id: Long //统一客户编号
                             , Fst_Buy_Sig_Tkt_Dt: String //首次购买单场票时间
                             , Lat_Buy_Sig_Tkt_Dt: String //最近一次购买单场票时间
                             , Fst_Buy_Vip_Tkt_Dt: String //首次购买套票时间
@@ -46,7 +46,7 @@ case class SoccerIndexData(
                           )
 
 class HotelIndexData(
-                      val gu_indv_id: String,
+                      val gu_indv_id: Long,
                       val hotel_mem_ind: Int,
                       val lodger_ind: Int,
                       val bevrg_cust_ind: Int,
@@ -98,7 +98,7 @@ class HotelIndexData(
                     ) extends Serializable
 
 class EstateIndexData(
-                       val gu_indv_id: String, // 个人客户统一编号
+                       val gu_indv_id: Long, // 个人客户统一编号
                        val gender_cd: String, // 性别
                        val age: Int, // 年龄
                        val buy_hous_ind: Int, // 购房用户标志
@@ -134,7 +134,7 @@ class EstateIndexData(
 }
 
 class CommonCustomerIndexData(
-                               val gu_indv_id: String, // 个人客户统一编号
+                               val gu_indv_id: Long, // 个人客户统一编号
                                val cust_nm: String, // 客户姓名
                                val idtfy_info: String, // 身份证号码
                                val birth_dt: String, // 出生日期

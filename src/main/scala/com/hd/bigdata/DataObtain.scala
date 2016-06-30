@@ -4,7 +4,7 @@ import java.awt.Polygon
 import java.text.SimpleDateFormat
 import java.util.Calendar
 
-import com.hd.bigdata.utils.DateUtils
+import com.hd.bigdata.utils.{TransformerConfigure, DateUtils}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.{SparkContext, SparkConf}
 import org.apache.spark.sql.DataFrame
@@ -158,18 +158,20 @@ object DataObtain {
     val getSrcDataStmt = "SELECT * FROM csum.h52_ftb_cust_integrate_info_g where Gu_Indv_Id is not null"
     println(getSrcDataStmt)
 
-    val dataFrame = sqlContext.sql(getSrcDataStmt);
+    val dataFrame = sqlContext.sql(getSrcDataStmt)
 
-    println("Sample Data: ")
-    dataFrame.show(10)
+    if (TransformerConfigure.isDebug) {
+      println("Sample Data: ")
+      dataFrame.show(10)
 
-    println("Number of rows returned : " + dataFrame.count())
+      println("Number of rows returned : " + dataFrame.count())
+    }
 
     //下面取
-    val dataRDD = dataFrame.map(data => {
+    dataFrame.map(data => {
       //System.out.println(data.getString(0),data.getString(1),data.getString(2))
       SoccerIndexData(
-        if (data.isNullAt(0)) "" else data.getString(0),
+        if (data.isNullAt(0)) 0 else data.getString(0).toLong,
         if (data.isNullAt(1)) "" else data.getString(1),
         if (data.isNullAt(2)) "" else data.getString(2),
         if (data.isNullAt(3)) "" else data.getString(3),
@@ -194,7 +196,6 @@ object DataObtain {
         if (data.isNullAt(19)) "" else data.getString(19))
     })
 
-    dataRDD
   }
 
   def getIntegratedEstateIndexFromHive(sc: SparkContext): RDD[EstateIndexData] = {
@@ -208,16 +209,18 @@ object DataObtain {
 
     val dataFrame = sqlContext.sql(getSrcDataStmt)
 
-    println("Sample Data: ")
-    dataFrame.show(10)
+    if (TransformerConfigure.isDebug) {
+      println("Sample Data: ")
+      dataFrame.show(10)
 
-    println("Number of rows returned : " + dataFrame.count())
+      println("Number of rows returned : " + dataFrame.count())
+    }
 
     //下面取
-    val dataRDD = dataFrame.map(data => {
+    dataFrame.map(data => {
       //System.out.println(data.getString(0),data.getString(1),data.getString(2))
       new EstateIndexData(
-        if (data.isNullAt(0)) "" else data.getString(0), // 个人客户统一编号
+        if (data.isNullAt(0)) 0 else data.getString(0).toLong, // 个人客户统一编号
         if (data.isNullAt(1)) "" else data.getString(1), // 性别
         //
         if (data.isNullAt(2)) 0 else data.getInt(2), // 年龄
@@ -251,7 +254,6 @@ object DataObtain {
         if (data.isNullAt(22)) "" else data.getString(22)) // 数据日期
     })
 
-    dataRDD
   }
 
 
@@ -275,16 +277,18 @@ object DataObtain {
 
     val dataFrame = sqlContext.sql(getSrcDataStmt)
 
-    println("Sample Data: ")
-    dataFrame.show(10)
+    if (TransformerConfigure.isDebug) {
+      println("Sample Data: ")
+      dataFrame.show(10)
 
-    println("Number of rows returned : " + dataFrame.count())
+      println("Number of rows returned : " + dataFrame.count())
+    }
 
     //下面取
-    val dataRDD = dataFrame.map(data => {
+    dataFrame.map(data => {
       //System.out.println(data.getString(0),data.getString(1),data.getString(2))
       new CommonCustomerIndexData(
-        if (data.isNullAt(0)) "" else data.getString(0), // 个人客户统一编号
+        if (data.isNullAt(0)) 0 else data.getString(0).toLong, // 个人客户统一编号
         if (data.isNullAt(1)) "" else data.getString(1), // 客户姓名
         if (data.isNullAt(2)) "" else data.getString(2), // 身份证号码
         if (data.isNullAt(3)) "" else data.getString(3), // 出生日期
@@ -338,7 +342,6 @@ object DataObtain {
         if (data.isNullAt(51)) "" else data.getString(51)) // 数据日期
     })
 
-    dataRDD
   }
 
   def getIntegratedHotelIndexFromHive(sc: SparkContext): RDD[HotelIndexData] = {
@@ -350,18 +353,20 @@ object DataObtain {
     val getSrcDataStmt = "SELECT * FROM csum.h52_hotel_unif_cust_csum where gu_indv_id is not null"
     println(getSrcDataStmt)
 
-    val dataFrame = sqlContext.sql(getSrcDataStmt);
+    val dataFrame = sqlContext.sql(getSrcDataStmt)
 
-    println("Sample Data: ")
-    dataFrame.show(10)
+    if (TransformerConfigure.isDebug) {
+      println("Sample Data: ")
+      dataFrame.show(10)
 
-    println("Number of rows returned : " + dataFrame.count())
+      println("Number of rows returned : " + dataFrame.count())
+    }
 
     //下面取
-    val dataRDD = dataFrame.map(data => {
+    dataFrame.map(data => {
       //System.out.println(data.getString(0),data.getString(1),data.getString(2))
       new HotelIndexData(
-        if (data.isNullAt(0)) "" else data.getString(0),
+        if (data.isNullAt(0)) 0 else data.getString(0).toLong,
 
         if (data.isNullAt(1)) 0 else data.getShort(1),
         if (data.isNullAt(2)) 0 else data.getShort(2),
@@ -423,7 +428,6 @@ object DataObtain {
 
     })
 
-    dataRDD
   }
 
   /**
@@ -437,25 +441,27 @@ object DataObtain {
     val sqlContext = new HiveContext(sc)
 
     import sqlContext.implicits._
-    sqlContext.sql("use csum");
+    sqlContext.sql("use csum")
 
     val getSrcDataStmt = getSqlForNumIndexData(industryClassCode)
     println(getSrcDataStmt)
 
     val dataFrame = sqlContext.sql(getSrcDataStmt) //.coalesce(256)
 
-    println("Sample Data: ")
-    dataFrame.show(10)
+    if (TransformerConfigure.isDebug) {
+      println("Sample Data: ")
+      dataFrame.show(10)
 
-    println("Number of rows returned : " + dataFrame.count())
+      println("Number of rows returned : " + dataFrame.count())
+    }
 
     //下面取
-    val dataRDD = dataFrame.map(data => {
+    dataFrame.map(data => {
       //System.out.println(data.getString(0),data.getString(1),data.getString(2))
       CustomerProdGrpIndexData(
         data.getString(0),
         data.getString(1),
-        data.getString(2),
+        data.getString(2).toLong,
         data.getString(3),
         data.getString(4),
 
@@ -472,10 +478,6 @@ object DataObtain {
         if (data.isNullAt(14)) 0 else data.getDecimal(14),
         if (data.isNullAt(15)) "" else data.getString(15))
     })
-    //      .collect()
-
-    //    dataRDD.toDF().show(10)
-    dataRDD
 
   }
 

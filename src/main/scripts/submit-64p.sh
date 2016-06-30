@@ -12,7 +12,7 @@ if [ -z "$WORK_DATE" -o -z "$INDUSTRY_CODE" ]; then
 fi
 
 if [ -z "$PARTITIONS" ]; then
-	PARTITIONS=64
+	PARTITIONS=256
 fi
 
 if [ -z "$EXPORT2REDIS" ]; then
@@ -151,10 +151,10 @@ echo
 spark-submit \
 	--class com.hd.bigdata.WordCount \
 	--master yarn \
-	--num-executors 8 \
+	--num-executors 64 \
 	--driver-memory 1g \
 	--executor-memory 8g \
-	--executor-cores 4 \
+	--executor-cores 2 \
 	--jars $DEPS \
 	--conf spark.default.parallelism=$PARTITIONS \
 	wordcount-1.0-SNAPSHOT.jar cluster $WORK_DATE $INDUSTRY_CODE $PARTITIONS $EXPORT2REDIS $METRICS_DEBUG 1>${LOG_FILE} 2>&1
