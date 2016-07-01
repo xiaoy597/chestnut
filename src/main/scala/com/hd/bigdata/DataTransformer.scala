@@ -606,7 +606,6 @@ class DataTransformer(val sc: SparkContext, val industryClassCode: String, val t
     rddToExport.foreachPartition(partition => {
       try {
         val jedis = RedisOperUtil.getJedis
-        var nRow: Int = 0
         if (jedis == null) {
           println("Failed to get Jedis resource!")
         } else {
@@ -627,7 +626,6 @@ class DataTransformer(val sc: SparkContext, val industryClassCode: String, val t
           })
 
           pipeline.sync()
-          pipeline = jedis.pipelined()
           RedisOperUtil.returnResource(jedis)
         }
       } catch {
