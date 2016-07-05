@@ -17,7 +17,7 @@ import org.apache.spark.rdd.RDD
 
 class DataTransformer(val sc: SparkContext, val industryClassCode: String, val today: Date, val numPartitions: Int) {
 
-  val transformRules = FlatConfig.getFlatRuleConfig(null, industryClassCode).toList
+  val transformRules = FlatConfig.getFlatRuleConfig(industryClassCode).toList
 
   def getTransformRules: List[FlatRuleConfig] = {
     transformRules

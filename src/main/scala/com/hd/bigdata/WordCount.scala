@@ -35,14 +35,15 @@ object WordCount {
 
     val sc = new SparkContext(conf)
 
-    val today = new SimpleDateFormat("yyyy-MM-dd").parse(args(1))
+    FlatConfig.indx_cat_cd = args(1)
+    val today = new SimpleDateFormat("yyyy-MM-dd").parse(args(2))
     DateUtils.today = today
 
-    val industryClassCode = args(2)
-    val numPartitions = args(3).toInt
+    val industryClassCode = args(3)
+    val numPartitions = args(4).toInt
 
-    TransformerConfigure.export2Redis = args(4).toBoolean
-    TransformerConfigure.isDebug = args(5).toBoolean
+    TransformerConfigure.export2Redis = args(5).toBoolean
+    TransformerConfigure.isDebug = args(6).toBoolean
 
     val transformer = new DataTransformer(sc, industryClassCode, today, numPartitions)
 

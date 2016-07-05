@@ -69,6 +69,7 @@ object FlatConfig {
   var conn: Connection = null
   var ps: PreparedStatement = null
   var rs: ResultSet = null
+  var indx_cat_cd : String = null
 
   def getDspsMappingPara(): List[DspsMappingPara] = {
 
@@ -143,29 +144,22 @@ object FlatConfig {
     *
     * @return
     */
-  def getFlatRuleConfig(tableName: String, industryClassCode: String): ListBuffer[FlatRuleConfig] = {
+  def getFlatRuleConfig(industryClassCode: String): ListBuffer[FlatRuleConfig] = {
 
     var item: FlatRuleConfig = null
     val itemList = ListBuffer[FlatRuleConfig]()
 
-    var sql = ""
+    val sql = "SELECT t1.indx_tbl_nm , t1.inds_cls_cd, t1.indx_clmn_nm , t1.statt_indx_id , t1.dim_id , t1.indx_calc_mode_cd , t2.indx_calc_mode_nm , t1.flat_tbl_nm , t1.flat_clmn_nm , t1.active_ind " +
+      "FROM h50_flat_rule_config t1 " +
+      "JOIN h50_calc_mode t2 ON t1.indx_calc_mode_cd = t2.indx_calc_mode_cd " +
+      "JOIN h50_indx_tbl_info t3 ON t1.indx_tbl_nm = t3.indx_tbl_nm " +
+      "AND t1.inds_cls_cd = t3.inds_cls_cd " +
+      "AND t1.indx_cat_cd = t3.indx_cat_cd " +
+      "WHERE t1.active_ind = 1 " +
+      "AND (t3.inds_cls_cd = '' OR t3.inds_cls_cd = '" + industryClassCode + "') " +
+      "AND t1.indx_cat_cd = '" + indx_cat_cd + "' "
 
-    if (tableName == null) {
-      sql = "SELECT t1.indx_tbl_nm , t1.inds_cls_cd, t1.indx_clmn_nm , t1.statt_indx_id , t1.dim_id , t1.indx_calc_mode_cd , t2.indx_calc_mode_nm , t1.flat_tbl_nm , t1.flat_clmn_nm , t1.active_ind " +
-        "FROM h50_flat_rule_config t1 " +
-        "JOIN h50_calc_mode t2 ON t1.indx_calc_mode_cd = t2.indx_calc_mode_cd " +
-        "JOIN h50_indx_tbl_info t3 ON t1.indx_tbl_nm = t3.indx_tbl_nm " +
-        "and t1.inds_cls_cd = t3.inds_cls_cd " +
-        "WHERE t1.active_ind = 1 and (t3.inds_cls_cd = '' or t3.inds_cls_cd = '" + industryClassCode + "') "
-    } else {
-      sql = "SELECT t1.indx_tbl_nm , t1.inds_cls_cd, t1.indx_clmn_nm , t1.statt_indx_id , t1.dim_id , t1.indx_calc_mode_cd , t2.indx_calc_mode_nm , t1.flat_tbl_nm , t1.flat_clmn_nm , t1.active_ind " +
-        "FROM h50_flat_rule_config t1 " +
-        "JOIN h50_calc_mode t2 ON t1.indx_calc_mode_cd = t2.indx_calc_mode_cd " +
-        "JOIN h50_indx_tbl_info t3 ON t1.indx_tbl_nm = t3.indx_tbl_nm " +
-        "and t1.inds_cls_cd = t3.inds_cls_cd " +
-        "WHERE t1.active_ind = 1 and t1.indx_tbl_nm = '" + tableName + "' " +
-        "and (t3.inds_cls_cd = '' or t3.inds_cls_cd = '" + industryClassCode + "') "
-    }
+    println("SQL for getting flat rule is:\n" + sql)
 
     try {
       conn = JDBCUtils.getConn()
@@ -196,87 +190,88 @@ object FlatConfig {
     itemList
   }
 
-  /**
-    * 获取源表及字段信息
-    *
-    * @return
-    */
-  def getTableColInfo(industryClassCode: String): ListBuffer[TableColInfo] = {
+  //  /**
+  //    * 获取源表及字段信息
+  //    *
+  //    * @return
+  //    *
+  //    */
+  //  def getTableColInfo(industryClassCode: String): ListBuffer[TableColInfo] = {
+  //
+  //    var item: TableColInfo = null
+  //    val itemList = ListBuffer[TableColInfo]()
+  //    var sql = ""
+  //    if (industryClassCode == null) {
+  //      sql = "SELECT t1.indx_tbl_nm, t1.indx_tbl_desc, t1.inds_cls_cd, t2.indx_clmn_nm, t2.indx_clmn_desc, t2.msmt_clmn_ind " +
+  //        "FROM h50_indx_tbl_info t1 JOIN h50_indx_clmn_info t2 ON t1.indx_tbl_nm = t2.indx_tbl_nm " +
+  //        "ORDER BY t1.indx_tbl_nm, t2.indx_clmn_nm "
+  //    } else {
+  //      sql = "SELECT t1.indx_tbl_nm, t1.indx_tbl_desc, t1.inds_cls_cd, t2.indx_clmn_nm, t2.indx_clmn_desc, t2.msmt_clmn_ind " +
+  //        "FROM h50_indx_tbl_info t1 JOIN h50_indx_clmn_info t2 ON t1.indx_tbl_nm = t2.indx_tbl_nm " +
+  //        "WHERE t1.inds_cls_cd = '" + industryClassCode + "' " +
+  //        "ORDER BY t1.indx_tbl_nm, t2.indx_clmn_nm "
+  //    }
+  //
+  //
+  //    try {
+  //      conn = JDBCUtils.getConn()
+  //
+  //      ps = conn.prepareStatement(sql)
+  //      rs = ps.executeQuery
+  //
+  //      while (rs.next) {
+  //        item = TableColInfo(rs.getString("indx_tbl_nm"), rs.getString("indx_tbl_desc"), rs.getString("inds_cls_cd"), rs.getString("indx_clmn_nm")
+  //          , rs.getString("indx_clmn_desc"), rs.getString("msmt_clmn_ind"))
+  //        itemList += item
+  //      }
+  //
+  //    } catch {
+  //      case e: Exception => e.printStackTrace()
+  //    } finally {
+  //      JDBCUtils.closeConn(rs, ps, conn)
+  //    }
+  //    itemList
+  //  }
 
-    var item: TableColInfo = null
-    val itemList = ListBuffer[TableColInfo]()
-    var sql = ""
-    if (industryClassCode == null) {
-      sql = "SELECT t1.indx_tbl_nm, t1.indx_tbl_desc, t1.inds_cls_cd, t2.indx_clmn_nm, t2.indx_clmn_desc, t2.msmt_clmn_ind " +
-        "FROM h50_indx_tbl_info t1 JOIN h50_indx_clmn_info t2 ON t1.indx_tbl_nm = t2.indx_tbl_nm " +
-        "ORDER BY t1.indx_tbl_nm, t2.indx_clmn_nm "
-    } else {
-      sql = "SELECT t1.indx_tbl_nm, t1.indx_tbl_desc, t1.inds_cls_cd, t2.indx_clmn_nm, t2.indx_clmn_desc, t2.msmt_clmn_ind " +
-        "FROM h50_indx_tbl_info t1 JOIN h50_indx_clmn_info t2 ON t1.indx_tbl_nm = t2.indx_tbl_nm " +
-        "WHERE t1.inds_cls_cd = '" + industryClassCode + "' " +
-        "ORDER BY t1.indx_tbl_nm, t2.indx_clmn_nm "
-    }
-
-
-    try {
-      conn = JDBCUtils.getConn()
-
-      ps = conn.prepareStatement(sql)
-      rs = ps.executeQuery
-
-      while (rs.next) {
-        item = TableColInfo(rs.getString("indx_tbl_nm"), rs.getString("indx_tbl_desc"), rs.getString("inds_cls_cd"), rs.getString("indx_clmn_nm")
-          , rs.getString("indx_clmn_desc"), rs.getString("msmt_clmn_ind"))
-        itemList += item
-      }
-
-    } catch {
-      case e: Exception => e.printStackTrace()
-    } finally {
-      JDBCUtils.closeConn(rs, ps, conn)
-    }
-    itemList
-  }
-
-  /**
-    * 获取源表扁平化方式
-    *
-    * @return
-    */
-  def getFlatMode(industryClassCode: String): ListBuffer[FlatMode] = {
-
-    var item: FlatMode = null
-    val itemList = ListBuffer[FlatMode]()
-
-    var sql = ""
-    if (industryClassCode == null) {
-      sql = "SELECT t1.indx_tbl_nm, t1.indx_tbl_desc, t1.inds_cls_cd, t1.flat_mode_cd, t2.flat_mode_nm " +
-        "FROM h50_indx_tbl_info t1 JOIN h50_flat_mode t2 ON t1.flat_mode_cd = t2.flat_mode_cd"
-    } else {
-      sql = "SELECT t1.indx_tbl_nm, t1.indx_tbl_desc, t1.inds_cls_cd, t1.flat_mode_cd, t2.flat_mode_nm " +
-        "FROM h50_indx_tbl_info t1 JOIN h50_flat_mode t2 ON t1.flat_mode_cd = t2.flat_mode_cd " +
-        "WHERE t1.inds_cls_cd = '" + industryClassCode + "' "
-    }
-
-    try {
-      conn = JDBCUtils.getConn()
-
-      ps = conn.prepareStatement(sql)
-      rs = ps.executeQuery
-
-      while (rs.next) {
-        item = FlatMode(rs.getString("indx_tbl_nm"), rs.getString("indx_tbl_desc"), rs.getString("inds_cls_cd"), rs.getString("flat_mode_cd")
-          , rs.getString("flat_mode_nm"))
-        itemList += item
-      }
-
-    } catch {
-      case e: Exception => e.printStackTrace()
-    } finally {
-      JDBCUtils.closeConn(rs, ps, conn)
-    }
-    itemList
-  }
+  //  /**
+  //    * 获取源表扁平化方式
+  //    *
+  //    * @return
+  //    */
+  //  def getFlatMode(industryClassCode: String): ListBuffer[FlatMode] = {
+  //
+  //    var item: FlatMode = null
+  //    val itemList = ListBuffer[FlatMode]()
+  //
+  //    var sql = ""
+  //    if (industryClassCode == null) {
+  //      sql = "SELECT t1.indx_tbl_nm, t1.indx_tbl_desc, t1.inds_cls_cd, t1.flat_mode_cd, t2.flat_mode_nm " +
+  //        "FROM h50_indx_tbl_info t1 JOIN h50_flat_mode t2 ON t1.flat_mode_cd = t2.flat_mode_cd"
+  //    } else {
+  //      sql = "SELECT t1.indx_tbl_nm, t1.indx_tbl_desc, t1.inds_cls_cd, t1.flat_mode_cd, t2.flat_mode_nm " +
+  //        "FROM h50_indx_tbl_info t1 JOIN h50_flat_mode t2 ON t1.flat_mode_cd = t2.flat_mode_cd " +
+  //        "WHERE t1.inds_cls_cd = '" + industryClassCode + "' "
+  //    }
+  //
+  //    try {
+  //      conn = JDBCUtils.getConn()
+  //
+  //      ps = conn.prepareStatement(sql)
+  //      rs = ps.executeQuery
+  //
+  //      while (rs.next) {
+  //        item = FlatMode(rs.getString("indx_tbl_nm"), rs.getString("indx_tbl_desc"), rs.getString("inds_cls_cd"), rs.getString("flat_mode_cd")
+  //          , rs.getString("flat_mode_nm"))
+  //        itemList += item
+  //      }
+  //
+  //    } catch {
+  //      case e: Exception => e.printStackTrace()
+  //    } finally {
+  //      JDBCUtils.closeConn(rs, ps, conn)
+  //    }
+  //    itemList
+  //  }
 
   /**
     * 获取查询条件
@@ -289,23 +284,19 @@ object FlatConfig {
     var item: RuleCondition = null
     val itemList = ListBuffer[RuleCondition]()
 
-    var sql = ""
+    val sql =
+      "SELECT t1.statt_indx_id , t1.dim_id , group_concat(t1.indx_calc_mode_cd order by t1.indx_calc_mode_cd  desc ) as indx_calc_mode_cd " +
+        "FROM h50_flat_rule_config t1 JOIN h50_indx_tbl_info t2 " +
+        "ON t1.indx_tbl_nm = t2.indx_tbl_nm " +
+        "AND t1.inds_cls_cd = t2.inds_cls_cd " +
+        "AND t1.indx_cat_cd = t2.indx_cat_cd " +
+        "WHERE t1.active_ind = 1 AND t2.flat_mode_cd = '20' " +
+        "AND t1.indx_cat_cd = '" + indx_cat_cd + "' " +
+        (if (industryClassCode != null)
+          "AND t2.inds_cls_cd = '" + industryClassCode + "' "
+        else "") +
+        "GROUP BY t1.statt_indx_id , t1.dim_id"
 
-    if (industryClassCode == null) {
-      sql = "SELECT t1.statt_indx_id , t1.dim_id , group_concat(t1.indx_calc_mode_cd order by t1.indx_calc_mode_cd  desc ) as indx_calc_mode_cd " +
-        "FROM h50_flat_rule_config t1 join h50_indx_tbl_info t2 " +
-        "on t1.indx_tbl_nm = t2.indx_tbl_nm and t1.inds_cls_cd = t2.inds_cls_cd " +
-        "WHERE t1.active_ind = 1 " +
-        "and t2.flat_mode_cd = '20' " +
-        "GROUP BY t1.statt_indx_id , t1.dim_id"
-    } else {
-      sql = "SELECT t1.statt_indx_id , t1.dim_id , group_concat(t1.indx_calc_mode_cd order by t1.indx_calc_mode_cd  desc ) as indx_calc_mode_cd " +
-        "FROM h50_flat_rule_config t1 join h50_indx_tbl_info t2 " +
-        "on t1.indx_tbl_nm = t2.indx_tbl_nm and t1.inds_cls_cd = t2.inds_cls_cd " +
-        "WHERE t1.active_ind = 1 AND t2.inds_cls_cd = '" + industryClassCode + "' " +
-        "and t2.flat_mode_cd = '20' " +
-        "GROUP BY t1.statt_indx_id , t1.dim_id"
-    }
 
     println("SQL for getting index filter conditions: [" + sql + "]")
 
@@ -328,19 +319,19 @@ object FlatConfig {
     itemList
   }
 
-  def main(args: Array[String]) {
-    //    val conf = new SparkConf().setAppName("sparkToMysql").setMaster("local[4]")
-    //    val sc = new SparkContext(conf)
-
-    //    val list = getFlatRuleConfig("Hotel_common_table")
-    //      val list = getTableColInfo("Hotel_common_table")
-    //    val list = getFlatMode("Hotel_common_table")
-    val list = getRuleConditions("Hotel_common_table")
-
-    for (i <- 0 until list.length)
-    //      System.out.println(list(i).indx_tbl_nm + "," + list(i).indx_clmn_nm + "," + list(i).statt_indx_id + "," + list(i).dim_id + "," + list(i).indx_calc_mode_cd + "," + list(i).indx_calc_mode_nm + "," + list(i).flat_tbl_nm + "," + list(i).flat_clmn_nm + "," + list(i).active_ind)
-    //      System.out.println(list(i).indx_tbl_nm + "," + list(i).indx_tbl_desc + "," + list(i).inds_cls_cd + "," + list(i).indx_clmn_nm + "," + list(i).indx_clmn_desc + "," + list(i).msmt_clmn_ind)
-    //      System.out.println(list(i).indx_tbl_nm + "," + list(i).indx_tbl_desc + "," + list(i).inds_cls_cd + "," + list(i).flat_mode_cd + "," + list(i).flat_mode_nm)
-      System.out.println(list(i).statt_indx_id + "," + list(i).dim_id + "," + list(i).indx_calc_mode_cd)
-  }
+  //  def main(args: Array[String]) {
+  //    //    val conf = new SparkConf().setAppName("sparkToMysql").setMaster("local[4]")
+  //    //    val sc = new SparkContext(conf)
+  //
+  //    //    val list = getFlatRuleConfig("Hotel_common_table")
+  //    //      val list = getTableColInfo("Hotel_common_table")
+  //    //    val list = getFlatMode("Hotel_common_table")
+  //    val list = getRuleConditions("Hotel_common_table")
+  //
+  //    for (i <- 0 until list.length)
+  //    //      System.out.println(list(i).indx_tbl_nm + "," + list(i).indx_clmn_nm + "," + list(i).statt_indx_id + "," + list(i).dim_id + "," + list(i).indx_calc_mode_cd + "," + list(i).indx_calc_mode_nm + "," + list(i).flat_tbl_nm + "," + list(i).flat_clmn_nm + "," + list(i).active_ind)
+  //    //      System.out.println(list(i).indx_tbl_nm + "," + list(i).indx_tbl_desc + "," + list(i).inds_cls_cd + "," + list(i).indx_clmn_nm + "," + list(i).indx_clmn_desc + "," + list(i).msmt_clmn_ind)
+  //    //      System.out.println(list(i).indx_tbl_nm + "," + list(i).indx_tbl_desc + "," + list(i).inds_cls_cd + "," + list(i).flat_mode_cd + "," + list(i).flat_mode_nm)
+  //      System.out.println(list(i).statt_indx_id + "," + list(i).dim_id + "," + list(i).indx_calc_mode_cd)
+  //  }
 }

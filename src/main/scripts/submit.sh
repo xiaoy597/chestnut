@@ -1,13 +1,14 @@
 #!/bin/sh
 
-WORK_DATE=$1
-INDUSTRY_CODE=$2
-PARTITIONS=$3
-EXPORT2REDIS=$4
-METRICS_DEBUG=$5
+INDEX_CAT=$1
+WORK_DATE=$2
+INDUSTRY_CODE=$3
+PARTITIONS=$4
+EXPORT2REDIS=$5
+METRICS_DEBUG=$6
 
-if [ -z "$WORK_DATE" -o -z "$INDUSTRY_CODE" ]; then
-	echo "Usage: $0 <WORK_DATE> <INDUSTRY_CODE>"
+if [ -z "$INDEX_CAT" -o -z "$WORK_DATE" -o -z "$INDUSTRY_CODE" ]; then
+	echo "Usage: $0 <INDEX_CAT> <WORK_DATE> <INDUSTRY_CODE>"
 	exit -1
 fi
 
@@ -27,6 +28,11 @@ fi
 #INDUSTRY_CODE=2000		# 酒店
 #INDUSTRY_CODE=3110		# 足球
 #INDUSTRY_CODE=7020		# 金服
+
+if [ "$INDEX_CAT" != "0" ]; then
+	echo "Invalid INDEX_CAT, please choose one from 0."
+	exit -1
+fi
 
 
 if [ "$INDUSTRY_CODE" != "1100" -a "$INDUSTRY_CODE" != "2000" -a "$INDUSTRY_CODE" != "3110" -a "$INDUSTRY_CODE" != "7020" ]; then
@@ -157,7 +163,7 @@ spark-submit \
 	--executor-cores 4 \
 	--jars $DEPS \
 	--conf spark.default.parallelism=$PARTITIONS \
-	wordcount-1.0-SNAPSHOT.jar cluster $WORK_DATE $INDUSTRY_CODE $PARTITIONS $EXPORT2REDIS $METRICS_DEBUG 1>${LOG_FILE} 2>&1
+	wordcount-1.0-SNAPSHOT.jar cluster $INDEX_CAT $WORK_DATE $INDUSTRY_CODE $PARTITIONS $EXPORT2REDIS $METRICS_DEBUG 1>${LOG_FILE} 2>&1
 
 grep Excep ${LOG_FILE} > /dev/null
 if [ $? -eq 1 ]; then
