@@ -39,65 +39,75 @@ object WordCount {
     val today = new SimpleDateFormat("yyyy-MM-dd").parse(args(2))
     DateUtils.today = today
 
-    val industryClassCode = args(3)
+    FlatConfig.inds_cls_cd = args(3)
     val numPartitions = args(4).toInt
 
     TransformerConfigure.export2Redis = args(5).toBoolean
     TransformerConfigure.isDebug = args(6).toBoolean
 
-    val transformer = new DataTransformer(sc, industryClassCode, today, numPartitions)
+    val transformer = new DataTransformer(sc, today, numPartitions)
 
-    val numIndex = transformer.produceNumIndex().cache()
-    if (TransformerConfigure.isDebug) {
-      println("Numeric Metrics Data Begin:")
-      numIndex.take(100).foreach(println)
-      println("Numeric Metrics Data End:")
-    }
+    transformer.getIndexData()
 
-    val flagIndex = transformer.produceFlagIndex().cache()
-    if (TransformerConfigure.isDebug) {
-      println("Flag Metrics Data Begin:")
-      flagIndex.take(100).foreach(println)
-      println("Flag Metrics Data End:")
-    }
+//    val flatRuleConfigure = FlatConfig.getFlatRuleConfig()
+//
+//    for (config <- flatRuleConfigure){
+//      println("SQL for querying " + config._1.indx_tbl_nm + " for " + config._1.inds_cls_cd + " is: ")
+//      println(FlatConfig.getIndexTableQueryStmt(config._1, config._2))
+//      println()
+//    }
 
-    val commonIndex = transformer.produceCommonFlagIndex().cache()
-    if (TransformerConfigure.isDebug) {
-      println("Common Flag Metrics Data Begin:")
-      commonIndex.take(100).foreach(println)
-      println("Common Flag Metrics Data End:")
-    }
-
-    val finalIndex = transformer.produceFinalIndex(numIndex, flagIndex, commonIndex).cache()
-    if (TransformerConfigure.isDebug) {
-      println("Final Metrics Data Begin:")
-      finalIndex.take(100).foreach(println)
-      println("Final Metrics Data End:")
-    }
-
-    val discretIndex = transformer.produceDiscreteIndex(finalIndex).cache()
-    if (TransformerConfigure.isDebug) {
-      println("Discretized Metrics Data Begin:")
-      discretIndex.take(100).foreach(println)
-      println("Discretized Metrics Data End:")
-    }
-
-    if (args(0).equals("cluster")) {
-
-      if (TransformerConfigure.export2Redis){
-        println("Exporting discretized metrics to Redis ...")
-        transformer.export2Redis(discretIndex)
-        println("Discretized metrics exported to Redis.")
-      }
-
-      println("Exporting user metrics to HBase ...")
-      transformer.export2HBase("user_metrics_test", finalIndex)
-      println("Metrics data exported to HBase.")
-
-      println("Exporting discretized metrics to HBase ...")
-      transformer.export2HBase("user_discrete_metrics_test", discretIndex)
-      println("Discretized metrics exported to HBase.")
-    }
+//    val numIndex = transformer.produceNumIndex().cache()
+//    if (TransformerConfigure.isDebug) {
+//      println("Numeric Metrics Data Begin:")
+//      numIndex.take(100).foreach(println)
+//      println("Numeric Metrics Data End:")
+//    }
+//
+//    val flagIndex = transformer.produceFlagIndex().cache()
+//    if (TransformerConfigure.isDebug) {
+//      println("Flag Metrics Data Begin:")
+//      flagIndex.take(100).foreach(println)
+//      println("Flag Metrics Data End:")
+//    }
+//
+//    val commonIndex = transformer.produceCommonFlagIndex().cache()
+//    if (TransformerConfigure.isDebug) {
+//      println("Common Flag Metrics Data Begin:")
+//      commonIndex.take(100).foreach(println)
+//      println("Common Flag Metrics Data End:")
+//    }
+//
+//    val finalIndex = transformer.produceFinalIndex(numIndex, flagIndex, commonIndex).cache()
+//    if (TransformerConfigure.isDebug) {
+//      println("Final Metrics Data Begin:")
+//      finalIndex.take(100).foreach(println)
+//      println("Final Metrics Data End:")
+//    }
+//
+//    val discretIndex = transformer.produceDiscreteIndex(finalIndex).cache()
+//    if (TransformerConfigure.isDebug) {
+//      println("Discretized Metrics Data Begin:")
+//      discretIndex.take(100).foreach(println)
+//      println("Discretized Metrics Data End:")
+//    }
+//
+//    if (args(0).equals("cluster")) {
+//
+//      if (TransformerConfigure.export2Redis){
+//        println("Exporting discretized metrics to Redis ...")
+//        transformer.export2Redis(discretIndex)
+//        println("Discretized metrics exported to Redis.")
+//      }
+//
+//      println("Exporting user metrics to HBase ...")
+//      transformer.export2HBase("user_metrics_test", finalIndex)
+//      println("Metrics data exported to HBase.")
+//
+//      println("Exporting discretized metrics to HBase ...")
+//      transformer.export2HBase("user_discrete_metrics_test", discretIndex)
+//      println("Discretized metrics exported to HBase.")
+//    }
 
     sc.stop()
   }

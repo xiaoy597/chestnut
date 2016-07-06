@@ -5,7 +5,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>com.hd.bigdata</groupId>
-    <artifactId>wordcount</artifactId>
+    <artifactId>chestnut</artifactId>
     <version>1.0-SNAPSHOT</version>
 
     <name>${project.artifactId}</name>

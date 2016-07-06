@@ -19,10 +19,12 @@
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
         <processorPath useClasspath="true" />
+        <module name="chestnut" />
         <module name="wordcount" />
       </profile>
     </annotationProcessing>
     <bytecodeTargetLevel>
+      <module name="chestnut" target="1.7" />
       <module name="wordcount" target="1.7" />
     </bytecodeTargetLevel>
   </component>
@@ -211,7 +213,7 @@
   </component>
   <component name="ProjectRootManager" version="2" languageLevel="JDK_1_7" default="false" assert-keyword="true" jdk-15="true" project-jdk-name="1.8.0_66" project-jdk-type="JavaSDK" />
   <component name="ScalaCompilerConfiguration">
-    <profile name="Maven 1" modules="wordcount">
+    <profile name="Maven 1" modules="wordcount,chestnut">
       <parameters>
         <parameter value="-make:transitive" />
         <parameter value="-dependencyfile" />

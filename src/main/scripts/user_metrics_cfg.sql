@@ -1,8 +1,8 @@
 # noinspection SqlNoDataSourceInspectionForFile
 USE user_profile;
 
-DROP TABLE h50_indx_tbl_info;
-CREATE TABLE h50_indx_tbl_info
+DROP TABLE h50_indx_tbl_info2;
+CREATE TABLE h50_indx_tbl_info2
 (
   indx_cat_cd char(1) NOT NULL COMMENT '指标体系代码',
   indx_tbl_nm varchar(30) NOT NULL COMMENT '指标表名称',
@@ -10,18 +10,23 @@ CREATE TABLE h50_indx_tbl_info
   inds_cls_cd varchar(4) COMMENT '产业分类代码',
   flat_mode_cd  varchar(2) COMMENT '扁平化方式代码',
   dim_clmn_nm varchar(20) COMMENT '维度字段名称',
+  key_clmn_nm varchar(20) COMMENT '指标键字段名称',
+  ext_condition varchar(500) COMMENT '指标表查询条件',
   created_ts  datetime COMMENT '创建时间',
   updated_ts  datetime COMMENT '最近更新时间',
   PRIMARY KEY (`indx_cat_cd`, `indx_tbl_nm`, `inds_cls_cd`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT '指标表信息表';
 
-insert into h50_indx_tbl_info values ('0', 'h52_inds_statt_indx_rslt_g', '', '1100', '20', 'prod_grp_id', '2016-05-23 08:00:00', '2016-05-23 08:00:00');
-insert into h50_indx_tbl_info values ('0', 'h52_inds_statt_indx_rslt_g', '', '3110', '20', 'prod_grp_id', '2016-05-23 08:00:00', '2016-05-23 08:00:00');
-insert into h50_indx_tbl_info values ('0', 'h52_ftb_cust_integrate_info_g', '', '3110', '10', '', '2016-05-23 08:00:00', '2016-05-23 08:00:00');
-insert into h50_indx_tbl_info values ('0', 'h52_inds_statt_indx_rslt_g', '', '2000', '20', 'prod_grp_id', '2016-05-23 08:00:00', '2016-05-23 08:00:00');
-insert into h50_indx_tbl_info values ('0', 'h52_hotel_unif_cust_csum', '', '2000', '10', '', '2016-05-23 08:00:00', '2016-05-23 08:00:00');
-insert into h50_indx_tbl_info values ('0', 'h52_cust_inds_merge','','','10','','2016-06-16 08:00:00','2016-06-16 08:00:00');
-insert into h50_indx_tbl_info values ('0', 'h52_estt_cust_integrate_info','','1100','10','','2016-06-16 08:00:00','2016-06-16 08:00:00');
+insert into h50_indx_tbl_info2 values ('0', 'h52_inds_statt_indx_rslt_g', '', '1100', '20', 'prod_grp_id', 'gu_indv_id', '', '2016-05-23 08:00:00', '2016-05-23 08:00:00');
+insert into h50_indx_tbl_info2 values ('0', 'h52_inds_statt_indx_rslt_g', '', '3110', '20', 'prod_grp_id', 'gu_indv_id', '', '2016-05-23 08:00:00', '2016-05-23 08:00:00');
+insert into h50_indx_tbl_info2 values ('0', 'h52_ftb_cust_integrate_info_g', '', '3110', '10', '', 'gu_indv_id', '', '2016-05-23 08:00:00', '2016-05-23 08:00:00');
+insert into h50_indx_tbl_info2 values ('0', 'h52_inds_statt_indx_rslt_g', '', '2000', '20', 'prod_grp_id', 'gu_indv_id', '', '2016-05-23 08:00:00', '2016-05-23 08:00:00');
+insert into h50_indx_tbl_info2 values ('0', 'h52_hotel_unif_cust_csum', '', '2000', '10', '', 'gu_indv_id', '', '2016-05-23 08:00:00', '2016-05-23 08:00:00');
+insert into h50_indx_tbl_info2 values ('0', 'h52_cust_inds_merge','','1100','10','','gu_indv_id', 'estate_purc_inte_ind  = 1 or estate_purc_ind = 1', '2016-06-16 08:00:00','2016-06-16 08:00:00');
+insert into h50_indx_tbl_info2 values ('0', 'h52_cust_inds_merge','','2000','10','','gu_indv_id', 'lodger_ind = 1', '2016-06-16 08:00:00','2016-06-16 08:00:00');
+insert into h50_indx_tbl_info2 values ('0', 'h52_cust_inds_merge','','3110','10','','gu_indv_id', 'sport_user_ind  = 1', '2016-06-16 08:00:00','2016-06-16 08:00:00');
+insert into h50_indx_tbl_info2 values ('0', 'h52_cust_inds_merge','','7020','10','','gu_indv_id', 'hd_fax_usr_ind  = 1', '2016-06-16 08:00:00','2016-06-16 08:00:00');
+insert into h50_indx_tbl_info2 values ('0', 'h52_estt_cust_integrate_info','','1100','10','','gu_indv_id', '', '2016-06-16 08:00:00','2016-06-16 08:00:00');
 
 # 指标体系信息表
 DROP TABLE h50_indx_cat_info;
@@ -83,8 +88,8 @@ insert into h50_calc_mode values ('20' ,'汇总-最近7天', '2016-05-23 08:00:0
 insert into h50_calc_mode values ('21' ,'汇总-最近30天', '2016-05-23 08:00:00', '2016-05-23 08:00:00');
 insert into h50_calc_mode values ('99' ,'未加工', '2016-05-23 08:00:00', '2016-05-23 08:00:00');
 
-DROP TABLE h50_flat_rule_config;
-CREATE TABLE h50_flat_rule_config
+DROP TABLE h50_flat_rule_config2;
+CREATE TABLE h50_flat_rule_config2
 (
   indx_cat_cd char(1) NOT NULL COMMENT '指标体系代码',
   indx_tbl_nm varchar(30) NOT NULL COMMENT '指标表名称',
@@ -101,24 +106,24 @@ CREATE TABLE h50_flat_rule_config
   PRIMARY KEY (`indx_cat_cd`, `indx_tbl_nm`, `inds_cls_cd`, `indx_clmn_nm`,`statt_indx_id`,`dim_id`,`indx_calc_mode_cd`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT '扁平化规则配置表';
 
-#insert into h50_flat_rule_config values ('0', 'h52_inds_statt_indx_rslt_g', '1100', 'Day_Indx_Val', 'MSMIDX0102', 'MSMGRP010101', '10', 'user_metrics_test', '', '1', '2016-05-23 08:00:00', '2016-05-23 08:00:00');
-#insert into h50_flat_rule_config values ('h52_inds_statt_indx_rslt_g', '1100', 'Day_Indx_Val', 'MSMIDX0102', 'MSMGRP010104', '10', 'user_metrics_test', '', '1', '2016-05-23 08:00:00', '2016-05-23 08:00:00');
-#insert into h50_flat_rule_config values ('h52_inds_statt_indx_rslt_g', '1100', 'Day_Indx_Val', 'MSMIDX0705', 'MSMGRP010101', '20', 'user_metrics_test', '', '1', '2016-05-23 08:00:00', '2016-05-23 08:00:00');
-#insert into h50_flat_rule_config values ('h52_inds_statt_indx_rslt_g', '1100', 'Day_Indx_Val', 'MSMIDX0705', 'MSMGRP010104', '21', 'user_metrics_test', '', '1', '2016-05-23 08:00:00', '2016-05-23 08:00:00');
+#insert into h50_flat_rule_config2 values ('0', 'h52_inds_statt_indx_rslt_g', '1100', 'Day_Indx_Val', 'MSMIDX0102', 'MSMGRP010101', '10', 'user_metrics_test', '', '1', '2016-05-23 08:00:00', '2016-05-23 08:00:00');
+#insert into h50_flat_rule_config2 values ('h52_inds_statt_indx_rslt_g', '1100', 'Day_Indx_Val', 'MSMIDX0102', 'MSMGRP010104', '10', 'user_metrics_test', '', '1', '2016-05-23 08:00:00', '2016-05-23 08:00:00');
+#insert into h50_flat_rule_config2 values ('h52_inds_statt_indx_rslt_g', '1100', 'Day_Indx_Val', 'MSMIDX0705', 'MSMGRP010101', '20', 'user_metrics_test', '', '1', '2016-05-23 08:00:00', '2016-05-23 08:00:00');
+#insert into h50_flat_rule_config2 values ('h52_inds_statt_indx_rslt_g', '1100', 'Day_Indx_Val', 'MSMIDX0705', 'MSMGRP010104', '21', 'user_metrics_test', '', '1', '2016-05-23 08:00:00', '2016-05-23 08:00:00');
 
-#insert into h50_flat_rule_config values ('0', 'h52_inds_statt_indx_rslt_g', '3110', 'Day_Indx_Val', 'FTBIDX0101', 'FTS040211', '10', 'user_metrics_test', '', '1', '2016-05-23 08:00:00', '2016-05-23 08:00:00');
-#insert into h50_flat_rule_config values ('h52_inds_statt_indx_rslt_g', '3110', 'Day_Indx_Val', 'FTBIDX0201', 'FTS040213', '21', 'user_metrics_test', '', '1', '2016-05-23 08:00:00', '2016-05-23 08:00:00');
-#insert into h50_flat_rule_config values ('h52_ftb_cust_integrate_info_g', '3110', 'Fst_Buy_Sig_Tkt_Dt', '', '', '10', 'user_metrics_test', '', '1', '2016-05-23 08:00:00', '2016-05-23 08:00:00');
-#insert into h50_flat_rule_config values ('0', 'h52_ftb_cust_integrate_info_g', '3110', 'Cur_Vip_Score', '', '', '10', 'user_metrics_test', '', '1', '2016-05-23 08:00:00', '2016-05-23 08:00:00');
-#insert into h50_flat_rule_config values ('h52_ftb_cust_integrate_info_g', '3110', 'vip_reg_user_ind', '', '', '10', 'user_metrics_test', '', '1', '2016-05-23 08:00:00', '2016-05-23 08:00:00');
+#insert into h50_flat_rule_config2 values ('0', 'h52_inds_statt_indx_rslt_g', '3110', 'Day_Indx_Val', 'FTBIDX0101', 'FTS040211', '10', 'user_metrics_test', '', '1', '2016-05-23 08:00:00', '2016-05-23 08:00:00');
+#insert into h50_flat_rule_config2 values ('h52_inds_statt_indx_rslt_g', '3110', 'Day_Indx_Val', 'FTBIDX0201', 'FTS040213', '21', 'user_metrics_test', '', '1', '2016-05-23 08:00:00', '2016-05-23 08:00:00');
+#insert into h50_flat_rule_config2 values ('h52_ftb_cust_integrate_info_g', '3110', 'Fst_Buy_Sig_Tkt_Dt', '', '', '10', 'user_metrics_test', '', '1', '2016-05-23 08:00:00', '2016-05-23 08:00:00');
+#insert into h50_flat_rule_config2 values ('0', 'h52_ftb_cust_integrate_info_g', '3110', 'Cur_Vip_Score', '', '', '10', 'user_metrics_test', '', '1', '2016-05-23 08:00:00', '2016-05-23 08:00:00');
+#insert into h50_flat_rule_config2 values ('h52_ftb_cust_integrate_info_g', '3110', 'vip_reg_user_ind', '', '', '10', 'user_metrics_test', '', '1', '2016-05-23 08:00:00', '2016-05-23 08:00:00');
 
-#insert into h50_flat_rule_config values ('0', 'h52_inds_statt_indx_rslt_g', '2000', 'Day_Indx_Val', 'HTLIDX0311', 'HTLCRSTJDLHDDXKLCF', '10', 'user_metrics_test', '', '1', '2016-05-23 08:00:00', '2016-05-23 08:00:00');
-#insert into h50_flat_rule_config values ('h52_inds_statt_indx_rslt_g', '2000', 'Day_Indx_Val', 'HTLIDX0101', 'HTLCRSTJDLHDDXKLGN', '21', 'user_metrics_test', '', '1', '2016-05-23 08:00:00', '2016-05-23 08:00:00');
-#insert into h50_flat_rule_config values ('h52_inds_statt_indx_rslt_g', '2000', 'Day_Indx_Val', 'HTLIDX0109', 'HTLCRSTJDLHDDXKMTG', '20', 'user_metrics_test', '', '1', '2016-05-23 08:00:00', '2016-05-23 08:00:00');
-#insert into h50_flat_rule_config values ('0', 'h52_hotel_unif_cust_csum', '2000', 'avg_live_days', '', '', '10', 'user_metrics_test', '', '1', '2016-05-23 08:00:00', '2016-05-23 08:00:00');
+#insert into h50_flat_rule_config2 values ('0', 'h52_inds_statt_indx_rslt_g', '2000', 'Day_Indx_Val', 'HTLIDX0311', 'HTLCRSTJDLHDDXKLCF', '10', 'user_metrics_test', '', '1', '2016-05-23 08:00:00', '2016-05-23 08:00:00');
+#insert into h50_flat_rule_config2 values ('h52_inds_statt_indx_rslt_g', '2000', 'Day_Indx_Val', 'HTLIDX0101', 'HTLCRSTJDLHDDXKLGN', '21', 'user_metrics_test', '', '1', '2016-05-23 08:00:00', '2016-05-23 08:00:00');
+#insert into h50_flat_rule_config2 values ('h52_inds_statt_indx_rslt_g', '2000', 'Day_Indx_Val', 'HTLIDX0109', 'HTLCRSTJDLHDDXKMTG', '20', 'user_metrics_test', '', '1', '2016-05-23 08:00:00', '2016-05-23 08:00:00');
+#insert into h50_flat_rule_config2 values ('0', 'h52_hotel_unif_cust_csum', '2000', 'avg_live_days', '', '', '10', 'user_metrics_test', '', '1', '2016-05-23 08:00:00', '2016-05-23 08:00:00');
 
-#insert into h50_flat_rule_config values ('0', 'h52_cust_inds_merge', '', 'idtfy_info', '', '', '10', 'user_metrics_test', '', '1', '2016-05-23 08:00:00', '2016-05-23 08:00:00');
-#insert into h50_flat_rule_config values ('0', 'h52_estt_cust_integrate_info', '1100', 'hous_nums', '', '', '10', 'user_metrics_test', '', '1', '2016-05-23 08:00:00', '2016-05-23 08:00:00');
+#insert into h50_flat_rule_config2 values ('0', 'h52_cust_inds_merge', '', 'idtfy_info', '', '', '10', 'user_metrics_test', '', '1', '2016-05-23 08:00:00', '2016-05-23 08:00:00');
+#insert into h50_flat_rule_config2 values ('0', 'h52_estt_cust_integrate_info', '1100', 'hous_nums', '', '', '10', 'user_metrics_test', '', '1', '2016-05-23 08:00:00', '2016-05-23 08:00:00');
 
 
 -- ######################### 离散化 ####################################

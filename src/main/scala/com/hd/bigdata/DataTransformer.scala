@@ -4,23 +4,87 @@ import java.text.SimpleDateFormat
 import java.util.{Calendar, Date}
 
 import com.evergrande.hdmp.hbase.{ProjectConfig, RedisOperUtil}
-import com.hd.bigdata.utils.TransformerConfigure
+import com.hd.bigdata.utils.{HiveUtils, TransformerConfigure}
 import org.apache.hadoop.hbase.client.{HTable, Put}
 import org.apache.hadoop.hbase.util.Bytes
 import org.apache.hadoop.hbase.{HBaseConfiguration, TableName}
 import org.apache.spark.SparkContext
 import org.apache.spark.rdd.RDD
+import org.apache.spark.sql.{Row, DataFrame}
+
+import scala.collection.mutable.ListBuffer
 
 /**
   * Created by Yu on 16/5/9.
   */
 
-class DataTransformer(val sc: SparkContext, val industryClassCode: String, val today: Date, val numPartitions: Int) {
+class DataTransformer(val sc: SparkContext, val today: Date, val numPartitions: Int) {
 
-  val transformRules = FlatConfig.getFlatRuleConfig(industryClassCode).toList
+  //  val transformRules = FlatConfig.getFlatRuleConfig()
+
+  def getIndexData() = {
+    val rddList = ListBuffer[RDD[(String, Map[String, String])]]()
+
+    for (config <- FlatConfig.getFlatRuleConfig()) {
+
+      println("Getting index data from " + config._1.indx_tbl_nm + " for " + config._1.inds_cls_cd)
+
+      val sql = FlatConfig.getIndexTableQueryStmt(config._1, config._2)
+
+      println("SQL is [" + sql + "]")
+
+      val dataFrame = HiveUtils.getDataFromHive(sql, sc)
+
+      val rdd =
+        if (config._1.flat_mode_cd.equals("20"))
+          getMeasurableIndexData(dataFrame, config._1, config._2).cache()
+        else
+          sc.emptyRDD[(String, Map[String, String])]
+
+
+      if (TransformerConfigure.isDebug)
+        if (rdd.count() > 0) {
+          println("Index data from table " + config._1.indx_tbl_nm + " for industry " + config._1.inds_cls_cd + " is:")
+          rdd.take(10).foreach(println)
+        }
+
+      rddList += rdd
+    }
+  }
+
+  def getMeasurableIndexData(dataFrame: DataFrame, tableConfig: FlatTableConfig, columnConfig: List[FlatColumnConfig])
+  : RDD[(String, Map[String, String])] = {
+
+    val indexRule = columnConfig.groupBy(x => (x.statt_indx_id, x.dim_id)).mapValues(x => {
+      for (c <- x) yield (c.indx_clmn_nm, c.indx_calc_mode_cd)
+    })
+
+    val rowWithRule = dataFrame.map(x => ((x.getAs[String]("statt_indx_id"), x.getAs[String](tableConfig.dim_clmn_nm)), x))
+      .join(sc.parallelize(indexRule.toList))
+      .map(x => (x._2._1.getAs[String](tableConfig.key_clmn_nm), x._2)).cache()
+
+    if (TransformerConfigure.isDebug){
+      println("RowWithRule is:")
+      rowWithRule.take(10).foreach(println)
+    }
+
+    val workdate = today
+
+    val indexRDD = rowWithRule.combineByKey(
+      i => MeasurableIndex(Map.empty, workdate, tableConfig).create(i),
+      (r: MeasurableIndex, i) => r.augment(i),
+      (r1: MeasurableIndex, r2: MeasurableIndex) => r1.merge(r2)
+    ).mapValues(x => x.indexMap)
+
+    indexRDD.mapValues(x => {
+      for (m <- x) yield m._1 -> m._2.toString()
+    })
+  }
+
 
   def getTransformRules: List[FlatRuleConfig] = {
-    transformRules
+    //    transformRules
+    List()
   }
 
   def flattenTransformRulesForNumIndex(): List[((String, String), Iterable[(String, String)])] = {
@@ -85,7 +149,7 @@ class DataTransformer(val sc: SparkContext, val industryClassCode: String, val t
       flatternedTransFormRulesForNumIndex.foreach(println)
     }
 
-    val numIndexData0 = DataObtain.getIntegratedNumIndexFromHive(industryClassCode, sc)
+    val numIndexData0 = DataObtain.getIntegratedNumIndexFromHive(FlatConfig.inds_cls_cd, sc)
     if (TransformerConfigure.isDebug) {
       println("Number of partitions for numeric index data is: " + numIndexData0.partitions.length)
     }
@@ -142,7 +206,7 @@ class DataTransformer(val sc: SparkContext, val industryClassCode: String, val t
       return sc.emptyRDD
     }
 
-    val commonIndexData0 = DataObtain.getIntegratedCommonIndexFromHive(sc, industryClassCode).map(x => (x.gu_indv_id, x))
+    val commonIndexData0 = DataObtain.getIntegratedCommonIndexFromHive(sc, FlatConfig.inds_cls_cd).map(x => (x.gu_indv_id, x))
     if (TransformerConfigure.isDebug) {
       println("Number of partitions for common flag index data is: " + commonIndexData0.partitions.length)
     }
@@ -231,7 +295,7 @@ class DataTransformer(val sc: SparkContext, val industryClassCode: String, val t
 
   def produceFlagIndex(): RDD[(Long, Map[String, String])] = {
 
-    val flattenedTransformRulesForFlagIndex = flattenTransformRulesForFlagIndex().filter(x => x._3.equals(industryClassCode))
+    val flattenedTransformRulesForFlagIndex = flattenTransformRulesForFlagIndex().filter(x => x._3.equals(FlatConfig.inds_cls_cd))
     if (TransformerConfigure.isDebug) {
       println("Number of flag flattened rules = " + flattenedTransformRulesForFlagIndex.size)
       for (r <- flattenedTransformRulesForFlagIndex)
@@ -242,7 +306,7 @@ class DataTransformer(val sc: SparkContext, val industryClassCode: String, val t
       return sc.emptyRDD
     }
 
-    industryClassCode match {
+    FlatConfig.inds_cls_cd match {
       case "1100" => // Estate
         val estateIndexData0 = DataObtain.getIntegratedEstateIndexFromHive(sc).map(x => (x.gu_indv_id, x))
         if (TransformerConfigure.isDebug) {

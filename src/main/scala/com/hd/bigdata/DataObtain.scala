@@ -70,84 +70,103 @@ object DataObtain {
     sql
   }
 
-//  /**
-//    * 获取查询SQL
-//    *
-//    * @param industryClassCode
-//    * @return
-//    */
-//  def getSrcDataSql(industryClassCode: String): String = {
-//
-//    //获取当前表的字段信息
-//    //    val list = FlatConfig.getTableColInfo(null).filter( i => i.indx_tbl_nm == tableName)
-//    val listCol = FlatConfig.getTableColInfo(industryClassCode)
-//    val listFlatMode = FlatConfig.getFlatMode(industryClassCode)
-//
-//    val sdf = new SimpleDateFormat("yyyy-MM-dd")
-//    val edt = sdf.format(DateUtils.today)
-//    var sdt = ""
-//
-//    var sql = ""
-//    var stattIndxId = ""
-//    var dimId = ""
-//    var indxCalcMode = ""
-//
-//    if (listCol.length > 0) {
-//
-//      if (listFlatMode.length == 1) {
-//
-//        if (listFlatMode.head.flat_mode_cd == "20") {
-//          //行转列
-//
-//          sql += "SELECT " +
-//            "Statt_Dt,\nStatt_Dt_Typ_Cd,\nGu_Indv_Id,\nProd_Grp_ID,\nStatt_Indx_ID,\nDay_Indx_Val,\nMonth_Indx_Val,\nQuarter_Indx_val,\nYear_Indx_Val,\nAccm_Indx_Val,\nData_Dt,\nRec_60d_Indx_Val,\nRec_90d_Indx_Val,\nRec_180d_Indx_Val,\nRec_360d_Indx_Val,\nInds_Cls_Cd "
-//
-//          //          for (i <- 0 until listCol.length)
-//          //            sql += listCol(i).indx_clmn_nm + " ,"
-//
-//          sql = sql.substring(0, sql.length - 1)
-//          sql += ("\nFROM " + industryClassCode + " \nWHERE ")
-//
-//          val listRule = FlatConfig.getRuleConditions(industryClassCode)
-//          for (i <- 0 until listRule.length) {
-//            stattIndxId = listRule(i).statt_indx_id
-//            dimId = listRule(i).dim_id
-//            //返回数据格式为：20100002,20001, 21,20,10 head为最大的计算方式（30天）
-//            if (listRule(i).indx_calc_mode_cd != null) {
-//              indxCalcMode = listRule(i).indx_calc_mode_cd.split(",").head
-//
-//              //汇总-最近30天
-//              if (indxCalcMode == "21") {
-//                sdt = sdf.format(DateUtils.getDateBeforeDays(30))
-//
-//                //汇总-最近7天
-//              } else if (indxCalcMode == "20") {
-//                sdt = sdf.format(DateUtils.getDateBeforeDays(7))
-//              } else {
-//                sdt = sdf.format(DateUtils.getDateBeforeDays(1))
-//              }
-//
-//            }
-//            //            System.out.println(stattIndxId + "," + dimId + "," + indxCalcMode + "," + sdt+ "," + edt)
-//
-//            sql += "(Statt_Indx_ID = '" + stattIndxId + "' and Prod_Grp_ID = '" + dimId + "' and statt_dt <= '" + edt + "' and statt_dt > '" + sdt + "' ) or \n"
-//
-//          }
-//          sql = sql.substring(0, sql.length - 4)
-//          //          sql = sql + "\nLIMIT 10"
-//
-//        } else {
-//          //直接扁平化
-//          System.out.println("直接扁平化。")
-//        }
-//      } else {
-//        System.out.println("源表扁平化方式不唯一/没有扁平化方式。")
-//      }
-//
-//
-//    }
-//    sql
-//  }
+  //  /**
+  //    * 获取查询SQL
+  //    *
+  //    * @param industryClassCode
+  //    * @return
+  //    */
+  //  def getSrcDataSql(industryClassCode: String): String = {
+  //
+  //    //获取当前表的字段信息
+  //    //    val list = FlatConfig.getTableColInfo(null).filter( i => i.indx_tbl_nm == tableName)
+  //    val listCol = FlatConfig.getTableColInfo(industryClassCode)
+  //    val listFlatMode = FlatConfig.getFlatMode(industryClassCode)
+  //
+  //    val sdf = new SimpleDateFormat("yyyy-MM-dd")
+  //    val edt = sdf.format(DateUtils.today)
+  //    var sdt = ""
+  //
+  //    var sql = ""
+  //    var stattIndxId = ""
+  //    var dimId = ""
+  //    var indxCalcMode = ""
+  //
+  //    if (listCol.length > 0) {
+  //
+  //      if (listFlatMode.length == 1) {
+  //
+  //        if (listFlatMode.head.flat_mode_cd == "20") {
+  //          //行转列
+  //
+  //          sql += "SELECT " +
+  //            "Statt_Dt,\nStatt_Dt_Typ_Cd,\nGu_Indv_Id,\nProd_Grp_ID,\nStatt_Indx_ID,\nDay_Indx_Val,\nMonth_Indx_Val,\nQuarter_Indx_val,\nYear_Indx_Val,\nAccm_Indx_Val,\nData_Dt,\nRec_60d_Indx_Val,\nRec_90d_Indx_Val,\nRec_180d_Indx_Val,\nRec_360d_Indx_Val,\nInds_Cls_Cd "
+  //
+  //          //          for (i <- 0 until listCol.length)
+  //          //            sql += listCol(i).indx_clmn_nm + " ,"
+  //
+  //          sql = sql.substring(0, sql.length - 1)
+  //          sql += ("\nFROM " + industryClassCode + " \nWHERE ")
+  //
+  //          val listRule = FlatConfig.getRuleConditions(industryClassCode)
+  //          for (i <- 0 until listRule.length) {
+  //            stattIndxId = listRule(i).statt_indx_id
+  //            dimId = listRule(i).dim_id
+  //            //返回数据格式为：20100002,20001, 21,20,10 head为最大的计算方式（30天）
+  //            if (listRule(i).indx_calc_mode_cd != null) {
+  //              indxCalcMode = listRule(i).indx_calc_mode_cd.split(",").head
+  //
+  //              //汇总-最近30天
+  //              if (indxCalcMode == "21") {
+  //                sdt = sdf.format(DateUtils.getDateBeforeDays(30))
+  //
+  //                //汇总-最近7天
+  //              } else if (indxCalcMode == "20") {
+  //                sdt = sdf.format(DateUtils.getDateBeforeDays(7))
+  //              } else {
+  //                sdt = sdf.format(DateUtils.getDateBeforeDays(1))
+  //              }
+  //
+  //            }
+  //            //            System.out.println(stattIndxId + "," + dimId + "," + indxCalcMode + "," + sdt+ "," + edt)
+  //
+  //            sql += "(Statt_Indx_ID = '" + stattIndxId + "' and Prod_Grp_ID = '" + dimId + "' and statt_dt <= '" + edt + "' and statt_dt > '" + sdt + "' ) or \n"
+  //
+  //          }
+  //          sql = sql.substring(0, sql.length - 4)
+  //          //          sql = sql + "\nLIMIT 10"
+  //
+  //        } else {
+  //          //直接扁平化
+  //          System.out.println("直接扁平化。")
+  //        }
+  //      } else {
+  //        System.out.println("源表扁平化方式不唯一/没有扁平化方式。")
+  //      }
+  //
+  //
+  //    }
+  //    sql
+  //  }
+
+  def getDataFromHive(sqlStmt: String, sc: SparkContext) : DataFrame = {
+    val sqlContext = new HiveContext(sc)
+
+    import sqlContext.implicits._
+
+    sqlContext.sql("use csum")
+
+    val dataFrame = sqlContext.sql(sqlStmt)
+
+    if (TransformerConfigure.isDebug) {
+      println("Sample Data: ")
+      dataFrame.show(10)
+
+      println("Number of rows returned : " + dataFrame.count())
+    }
+
+    dataFrame
+  }
 
   def getIntegratedSoccerIndexFromHive(sc: SparkContext): RDD[SoccerIndexData] = {
     val sqlContext = new HiveContext(sc)
