@@ -70,7 +70,10 @@ case class MeasurableIndex(indexMap: Map[String, BigDecimal], today: Date, table
         case _ => "unknown"
       })
 
-    val indexValue : BigDecimal = row.getDecimal(row.fieldIndex(indexRule._1))
+    val indexValue : BigDecimal = {
+      val v = row.getDecimal(row.fieldIndex(indexRule._1))
+      if (v == null) 0.0 else v
+    }
 
     indexCalcMode match {
       case "10" if indexDate.equals(today) => // Directly assignment for indices of current date.

@@ -9,13 +9,7 @@ import org.apache.spark.{SparkConf, SparkContext}
 
 object WordCount {
 
-  // Usage: WordCount <local/yarn> <today:yyyy-MM-dd>
   def main(args: Array[String]) {
-
-    // System.setProperty("hadoop.home.dir", "D:\\Program Files\\hadoop-common-2.2.0-bin-master");
-    // sc.parallelize()
-    // val line = sc.textFile("word.txt")
-    // line.flatMap(_.split(" ")).map((_, 1)).reduceByKey(_+_).collect().foreach(println)
 
     if (args.length == 1 && args(0).equalsIgnoreCase("clear")) {
       println("Clearing existing Redis data ...")
@@ -27,9 +21,9 @@ object WordCount {
     var conf: SparkConf = null
 
     if (args.length > 0 && args(0).equals("local")) {
-      conf = new SparkConf().setAppName("CustomerMetrics").setMaster("local[4]")
+      conf = new SparkConf().setAppName("MetricsLoad").setMaster("local[4]")
     } else {
-      conf = new SparkConf().setAppName("CustomerMetrics")
+      conf = new SparkConf().setAppName("指标与标签加载")
     }
 
 
@@ -47,67 +41,39 @@ object WordCount {
 
     val transformer = new DataTransformer(sc, today, numPartitions)
 
-    transformer.getIndexData()
+    val metricsRDD = transformer.computeMetricsData()
+    if (TransformerConfigure.isDebug){
+      println("Metrics data for index category %s and industry %s has %d rows:"
+        .format(FlatConfig.indx_cat_cd, FlatConfig.inds_cls_cd, metricsRDD.count()))
+      metricsRDD.take(100).foreach(println)
+    }
 
-//    val flatRuleConfigure = FlatConfig.getFlatRuleConfig()
-//
-//    for (config <- flatRuleConfigure){
-//      println("SQL for querying " + config._1.indx_tbl_nm + " for " + config._1.inds_cls_cd + " is: ")
-//      println(FlatConfig.getIndexTableQueryStmt(config._1, config._2))
-//      println()
-//    }
+    val tagsRDD = transformer.computeTagData(metricsRDD)
+    if (TransformerConfigure.isDebug){
+      println("Tag data for index category %s and industry %s has %d rows:"
+        .format(FlatConfig.indx_cat_cd, FlatConfig.inds_cls_cd, tagsRDD.count()))
+      tagsRDD.take(100).foreach(println)
+    }
 
-//    val numIndex = transformer.produceNumIndex().cache()
-//    if (TransformerConfigure.isDebug) {
-//      println("Numeric Metrics Data Begin:")
-//      numIndex.take(100).foreach(println)
-//      println("Numeric Metrics Data End:")
-//    }
-//
-//    val flagIndex = transformer.produceFlagIndex().cache()
-//    if (TransformerConfigure.isDebug) {
-//      println("Flag Metrics Data Begin:")
-//      flagIndex.take(100).foreach(println)
-//      println("Flag Metrics Data End:")
-//    }
-//
-//    val commonIndex = transformer.produceCommonFlagIndex().cache()
-//    if (TransformerConfigure.isDebug) {
-//      println("Common Flag Metrics Data Begin:")
-//      commonIndex.take(100).foreach(println)
-//      println("Common Flag Metrics Data End:")
-//    }
-//
-//    val finalIndex = transformer.produceFinalIndex(numIndex, flagIndex, commonIndex).cache()
-//    if (TransformerConfigure.isDebug) {
-//      println("Final Metrics Data Begin:")
-//      finalIndex.take(100).foreach(println)
-//      println("Final Metrics Data End:")
-//    }
-//
-//    val discretIndex = transformer.produceDiscreteIndex(finalIndex).cache()
-//    if (TransformerConfigure.isDebug) {
-//      println("Discretized Metrics Data Begin:")
-//      discretIndex.take(100).foreach(println)
-//      println("Discretized Metrics Data End:")
-//    }
-//
-//    if (args(0).equals("cluster")) {
-//
-//      if (TransformerConfigure.export2Redis){
-//        println("Exporting discretized metrics to Redis ...")
-//        transformer.export2Redis(discretIndex)
-//        println("Discretized metrics exported to Redis.")
-//      }
-//
-//      println("Exporting user metrics to HBase ...")
-//      transformer.export2HBase("user_metrics_test", finalIndex)
-//      println("Metrics data exported to HBase.")
-//
-//      println("Exporting discretized metrics to HBase ...")
-//      transformer.export2HBase("user_discrete_metrics_test", discretIndex)
-//      println("Discretized metrics exported to HBase.")
-//    }
+    if (args(0).equals("cluster")) {
+
+      if (TransformerConfigure.export2Redis){
+        println("Exporting discretized metrics to Redis ...")
+        transformer.export2Redis(tagsRDD)
+        println("Discretized metrics exported to Redis.")
+      }
+
+      val indexCategory = FlatConfig.getIndexCategory()
+        .filter(x => x.indx_cat_cd.equals(FlatConfig.indx_cat_cd)).head
+
+      println("Exporting user metrics to HBase ...")
+      transformer.export2HBase(indexCategory.metrics_tbl_nm, metricsRDD)
+      println("Metrics data exported to HBase.")
+
+      println("Exporting tags to HBase ...")
+      transformer.export2HBase(indexCategory.tag_tbl_nm, tagsRDD)
+      println("Tags exported to HBase.")
+    }
 
     sc.stop()
   }

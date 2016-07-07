@@ -1,10 +1,9 @@
 package com.hd.bigdata
 
-import java.sql.{ResultSet, DriverManager, PreparedStatement, Connection}
+import java.sql.{Connection, PreparedStatement, ResultSet}
 import java.text.SimpleDateFormat
 
-import com.hd.bigdata.utils.{DateUtils, TransformerConfigure, JDBCUtils}
-import org.apache.spark.{SparkContext, SparkConf}
+import com.hd.bigdata.utils.{DateUtils, JDBCUtils, TransformerConfigure}
 
 import scala.collection.mutable.ListBuffer
 
@@ -60,6 +59,13 @@ case class FlatMode(
 
                    )
 
+case class IndexCategory(
+                          indx_cat_cd: String, // '指标体系代码',
+                          indx_cat_nm: String, // '指标体系名称',
+                          metrics_tbl_nm: String, // '指标宽表名称',
+                          tag_tbl_nm: String // '标签宽表名称',
+                        )
+
 case class RuleCondition(
                           var statt_indx_id: String, //统计指标编号
                           var dim_id: String, //维度ID
@@ -72,7 +78,7 @@ case class DspsRule(
                      tag_ctgy_id: Int,
                      dsps_alg_id: String,
                      dsps_alg_type_cd: String,
-                     dsps_rules: String
+                     dsps_paras: String
                    )
 
 case class DspsMappingPara(
@@ -89,6 +95,36 @@ object FlatConfig {
   var rs: ResultSet = null
   var indx_cat_cd: String = null
   var inds_cls_cd: String = null
+
+  def getIndexCategory() : List[IndexCategory] = {
+    val itemList = ListBuffer[IndexCategory]()
+
+    val sql = "SELECT * from h50_indx_cat_info"
+
+    println("SQL for getting index category info : [" + sql + "]")
+
+    try {
+      conn = JDBCUtils.getConn()
+
+      ps = conn.prepareStatement(sql)
+      rs = ps.executeQuery
+
+      while (rs.next) {
+        itemList += IndexCategory(
+          rs.getString("indx_cat_cd"),
+          rs.getString("indx_cat_nm"),
+          rs.getString("metrics_tbl_nm"),
+          rs.getString("tag_tbl_nm"))
+      }
+
+    } catch {
+      case e: Exception => e.printStackTrace()
+    } finally {
+      JDBCUtils.closeConn(rs, ps, conn)
+    }
+
+    itemList.toList
+  }
 
   def getDspsMappingPara(): List[DspsMappingPara] = {
 
@@ -126,7 +162,7 @@ object FlatConfig {
     val itemList = ListBuffer[DspsRule]()
 
     val sql = "SELECT t1.flat_tbl_nm, t1.flat_clmn_nm, t1.tag_ctgy_id, t1.dsps_alg_id, t2.dsps_alg_type_cd , " +
-      " group_concat(t3.rule_para_value order by t3.rule_para_seq) as dsps_rules " +
+      " group_concat(t3.rule_para_value order by t3.rule_para_seq) as dsps_paras " +
       "FROM h50_dsps_tag_mapping t1 " +
       "join h50_dsps_alg_info t2 on t1.dsps_alg_id = t2.dsps_alg_id " +
       "join h50_dsps_alg_rule_para t3 on t1.dsps_alg_id = t3.dsps_alg_id " +
@@ -147,7 +183,7 @@ object FlatConfig {
           rs.getInt("tag_ctgy_id"),
           rs.getString("dsps_alg_id"),
           rs.getString("dsps_alg_type_cd"),
-          rs.getString("dsps_rules"))
+          rs.getString("dsps_paras"))
       }
 
     } catch {
@@ -171,9 +207,9 @@ object FlatConfig {
     val sql = "SELECT t1.indx_tbl_nm , t1.inds_cls_cd, t1.indx_clmn_nm , " +
       "t1.statt_indx_id , t1.dim_id , t1.indx_calc_mode_cd , t2.indx_calc_mode_nm , " +
       "t3.key_clmn_nm, t3.flat_mode_cd, t3.dim_clmn_nm, t3.ext_condition " +
-      "FROM h50_flat_rule_config2 t1 " +
+      "FROM h50_flat_rule_config t1 " +
       "JOIN h50_calc_mode t2 ON t1.indx_calc_mode_cd = t2.indx_calc_mode_cd " +
-      "JOIN h50_indx_tbl_info2 t3 ON t1.indx_tbl_nm = t3.indx_tbl_nm " +
+      "JOIN h50_indx_tbl_info t3 ON t1.indx_tbl_nm = t3.indx_tbl_nm " +
       "AND t1.inds_cls_cd = t3.inds_cls_cd " +
       "AND t1.indx_cat_cd = t3.indx_cat_cd " +
       "WHERE t1.active_ind = 1 " +
@@ -228,7 +264,7 @@ object FlatConfig {
     "SELECT " + tableConfig.key_clmn_nm + ", " +
       (for (c <- columnConfig) yield c.indx_clmn_nm).distinct.reduce(_ + ", " + _) +
       (if (tableConfig.flat_mode_cd.equals("20"))
-        ", " + List("statt_dt", "statt_indx_id", tableConfig.dim_clmn_nm).reduce(_  + ", " + _)
+        ", " + List("statt_dt", "statt_indx_id", tableConfig.dim_clmn_nm).reduce(_ + ", " + _)
       else
         ""
         ) + " " +
