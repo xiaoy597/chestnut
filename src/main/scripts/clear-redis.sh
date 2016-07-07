@@ -1,45 +1,5 @@
 #!/bin/sh
 
-INDEX_CAT=$1
-WORK_DATE=$2
-INDUSTRY_CODE=$3
-PARTITIONS=$4
-EXPORT2REDIS=$5
-METRICS_DEBUG=$6
-
-if [ -z "$INDEX_CAT" -o -z "$WORK_DATE" -o -z "$INDUSTRY_CODE" ]; then
-	echo "Usage: $0 <INDEX_CAT> <WORK_DATE> <INDUSTRY_CODE>"
-	exit -1
-fi
-
-if [ -z "$PARTITIONS" ]; then
-	PARTITIONS=64
-fi
-
-if [ -z "$EXPORT2REDIS" ]; then
-	EXPORT2REDIS=true
-fi
-
-if [ -z "$METRICS_DEBUG" ]; then
-	METRICS_DEBUG=true
-fi
-
-#INDUSTRY_CODE=1100		# 房地产
-#INDUSTRY_CODE=2000		# 酒店
-#INDUSTRY_CODE=3110		# 足球
-#INDUSTRY_CODE=7020		# 金服
-
-if [ "$INDEX_CAT" != "0" ]; then
-	echo "Invalid INDEX_CAT, please choose one from 0."
-	exit -1
-fi
-
-
-if [ "$INDUSTRY_CODE" != "1100" -a "$INDUSTRY_CODE" != "2000" -a "$INDUSTRY_CODE" != "3110" -a "$INDUSTRY_CODE" != "7020" ]; then
-	echo "Invalid INDUSTRY_CODE, please choose one from 1100, 2000, 3110 and 7020."
-	exit -1
-fi
-
 DEPS="\
 ./lib/mysql-connector-java-5.1.38.jar,\
 ./lib/activation-1.1.jar,\
@@ -149,7 +109,7 @@ DEPS="\
 ./lib/zookeeper-3.4.6.jar"
 
 CURR_TIME=`date +%Y%m%d%H%M`
-LOG_FILE=metrics_${INDUSTRY_CODE}_${CURR_TIME}.log
+LOG_FILE=metrics_clear_${CURR_TIME}.log
 
 echo "Please wait ..."
 echo
@@ -163,12 +123,11 @@ spark-submit \
 	--executor-cores 4 \
 	--jars $DEPS \
 	--conf spark.default.parallelism=$PARTITIONS \
-	chestnut-1.0-SNAPSHOT.jar cluster $INDEX_CAT $WORK_DATE $INDUSTRY_CODE $PARTITIONS $EXPORT2REDIS $METRICS_DEBUG 1>${LOG_FILE} 2>&1
+	chestnut-1.0-SNAPSHOT.jar clear 1>${LOG_FILE} 2>&1
 
 grep Excep ${LOG_FILE} > /dev/null
 if [ $? -eq 1 ]; then
 	echo "Job finished successfully."
-	echo "Please refer to HBase table 'user_metrics_test/user_discrete_metrics_test' for the result."
 	exit 0
 else
 	echo "Job failed with exception, please check ${LOG_FILE} for more details."

@@ -7,7 +7,7 @@ import com.hd.bigdata.utils.{TransformerConfigure, DateUtils}
 import org.apache.spark.{SparkConf, SparkContext}
 
 
-object WordCount {
+object MetricsLoader {
 
   def main(args: Array[String]) {
 
