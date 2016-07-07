@@ -1,4 +1,4 @@
-package com.evergrande.hdmp.hbase;
+package com.evergrande.bigdata.utils;
 
 public class ProjectConfig {
 //    public static final String REDIS_HOST_IP = "120.26.215.198";

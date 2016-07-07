@@ -155,7 +155,7 @@ echo "Please wait ..."
 echo
 
 spark-submit \
-	--class com.hd.bigdata.MetricsLoader \
+	--class com.evergrande.bigdata.MetricsLoader \
 	--master yarn \
 	--num-executors 8 \
 	--driver-memory 1g \

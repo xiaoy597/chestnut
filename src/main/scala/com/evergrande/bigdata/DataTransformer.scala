@@ -1,9 +1,8 @@
-package com.hd.bigdata
+package com.evergrande.bigdata
 
 import java.util.Date
 
-import com.evergrande.hdmp.hbase.{ProjectConfig, RedisOperUtil}
-import com.hd.bigdata.utils.{HiveUtils, TransformerConfigure}
+import com.evergrande.bigdata.utils.{HiveUtils, ProjectConfig, RedisOperUtil, TransformerConfigure}
 import org.apache.hadoop.hbase.client.{HTable, Put}
 import org.apache.hadoop.hbase.util.Bytes
 import org.apache.hadoop.hbase.{HBaseConfiguration, TableName}

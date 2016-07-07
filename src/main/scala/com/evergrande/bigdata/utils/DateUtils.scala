@@ -1,6 +1,5 @@
-package com.hd.bigdata.utils
+package com.evergrande.bigdata.utils
 
-import java.text.SimpleDateFormat
 import java.util.{Calendar, Date}
 
 /**

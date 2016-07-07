@@ -1,4 +1,4 @@
-package com.hd.bigdata.utils
+package com.evergrande.bigdata.utils
 
 /**
   * Created by Yu on 16/5/24.

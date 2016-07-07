@@ -1,4 +1,4 @@
-package com.evergrande.hdmp.hbase;
+package com.evergrande.bigdata.utils;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

@@ -1,9 +1,8 @@
-package com.hd.bigdata
+package com.evergrande.bigdata
 
 import java.text.SimpleDateFormat
 
-import com.evergrande.hdmp.hbase.{ProjectConfig, RedisOperUtil}
-import com.hd.bigdata.utils.{TransformerConfigure, DateUtils}
+import com.evergrande.bigdata.utils.{DateUtils, ProjectConfig, RedisOperUtil, TransformerConfigure}
 import org.apache.spark.{SparkConf, SparkContext}
 
 
