@@ -29,6 +29,7 @@ insert into h50_indx_tbl_info values ('0', 'h52_inds_statt_indx_rslt_g', '', '31
 insert into h50_indx_tbl_info values ('0', 'h52_cust_inds_merge','','3110','10','','gu_indv_id', 'sport_user_ind  = 1', '2016-06-16 08:00:00','2016-06-16 08:00:00');
 insert into h50_indx_tbl_info values ('0', 'h52_ftb_cust_integrate_info_g', '', '3110', '10', '', 'gu_indv_id', '', '2016-05-23 08:00:00', '2016-05-23 08:00:00');
 
+insert into h50_indx_tbl_info values ('0', 'h52_inds_statt_indx_rslt_g', '', '7020', '20', 'prod_grp_id', 'gu_indv_id', '', '2016-05-23 08:00:00', '2016-05-23 08:00:00');
 insert into h50_indx_tbl_info values ('0', 'h52_inds_statt_indx_rslt_ga','','7020','20','camp_act_grp_id','gu_indv_id', '', '2016-06-16 08:00:00','2016-06-16 08:00:00');
 insert into h50_indx_tbl_info values ('0', 'h52_cust_inds_merge','','7020','10','','gu_indv_id', 'hd_fax_usr_ind  = 1', '2016-06-16 08:00:00','2016-06-16 08:00:00');
 insert into h50_indx_tbl_info values ('0', 'h52_fax_usr_merge_csum', '', '7020', '10', '', 'gu_indv_id', '', '2016-05-23 08:00:00', '2016-05-23 08:00:00');
