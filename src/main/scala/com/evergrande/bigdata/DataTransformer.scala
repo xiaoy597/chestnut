@@ -18,8 +18,6 @@ import scala.collection.mutable.ListBuffer
 
 class DataTransformer(val sc: SparkContext, val today: Date, val numPartitions: Int) {
 
-  //  val transformRules = FlatConfig.getFlatRuleConfig()
-
   def computeMetricsData(): RDD[(String, Map[String, String])] = {
     val rddList = ListBuffer[RDD[(String, Map[String, String])]]()
 
@@ -209,7 +207,7 @@ class DataTransformer(val sc: SparkContext, val today: Date, val numPartitions: 
         .collect().foreach(println)
     }
 
-    println("Sum of tags:")
+    println("Statistics of tags:")
     tagRDD
       .flatMap(r => for (i <- r._2) yield (i._2, 1))
       .reduceByKey(_ + _)
@@ -233,8 +231,8 @@ class DataTransformer(val sc: SparkContext, val today: Date, val numPartitions: 
         rdd
     }.cache()
 
-    val metricsCount2Redis = sc.accumulator(0)
-    val custCount2Redis = sc.accumulator(0)
+    val numTag2Redis = sc.accumulator(0)
+    val numRow2Redis = sc.accumulator(0)
 
     // Write to Redis
     rddToExport.foreachPartition(partition => {
@@ -249,14 +247,14 @@ class DataTransformer(val sc: SparkContext, val today: Date, val numPartitions: 
             for (metric <- row._2; redisKey = ProjectConfig.KEY_PREFIX + metric._2) {
               pipeline.setbit(redisKey, row._1.toLong, true)
               i += 1
-              metricsCount2Redis += 1
+              numTag2Redis += 1
               if (i == 1000000) {
                 pipeline.sync()
                 pipeline = jedis.pipelined()
                 i = 0
               }
             }
-            custCount2Redis += 1
+            numRow2Redis += 1
           })
 
           pipeline.sync()
@@ -268,8 +266,8 @@ class DataTransformer(val sc: SparkContext, val today: Date, val numPartitions: 
       }
     })
 
-    println("Totally " + custCount2Redis.value + " customers with "
-      + metricsCount2Redis.value + " tags written to Redis.")
+    println("Totally " + numRow2Redis.value + " rows with "
+      + numTag2Redis.value + " tags written to Redis.")
   }
 
   def export2HBase(tableName: String, rdd: RDD[(String, Map[String, String])]): Unit = {
@@ -288,8 +286,8 @@ class DataTransformer(val sc: SparkContext, val today: Date, val numPartitions: 
         rdd
     }.cache()
 
-    val metricsCount2HBase = sc.accumulator(0)
-    val custCount2HBase = sc.accumulator(0)
+    val numCell2HBase = sc.accumulator(0)
+    val numRow2HBase = sc.accumulator(0)
 
     // Write to HBase
     rddToExport.foreachPartition(partition => {
@@ -307,20 +305,20 @@ class DataTransformer(val sc: SparkContext, val today: Date, val numPartitions: 
             entry.add("cf".getBytes,
               Bytes.toBytes(if (metric._1.length == 0) "null" else metric._1),
               Bytes.toBytes(if (metric._2.length == 0) "null" else metric._2))
-            metricsCount2HBase += 1
+            numCell2HBase += 1
           })
           myTable.put(entry)
         } else {
           println("WARNING!!! No metric/tag found for key " + row._1.toString)
         }
 
-        custCount2HBase += 1
+        numRow2HBase += 1
       })
       myTable.flushCommits()
     })
 
-    println("Totally " + custCount2HBase.value + " rows with "
-      + metricsCount2HBase.value + " cells written to HBase.")
+    println("Totally " + numRow2HBase.value + " rows with "
+      + numCell2HBase.value + " cells written to HBase.")
 
   }
 }
