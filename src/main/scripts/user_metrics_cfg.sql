@@ -94,6 +94,8 @@ CREATE TABLE h50_calc_mode
 insert into h50_calc_mode values ('10' ,'直接取数', '2016-05-23 08:00:00', '2016-05-23 08:00:00');
 insert into h50_calc_mode values ('20' ,'汇总-最近7天', '2016-05-23 08:00:00', '2016-05-23 08:00:00');
 insert into h50_calc_mode values ('21' ,'汇总-最近30天', '2016-05-23 08:00:00', '2016-05-23 08:00:00');
+insert into h50_calc_mode values ('22' ,'汇总-最近10天', '2016-05-23 08:00:00', '2016-05-23 08:00:00');
+insert into h50_calc_mode values ('23' ,'汇总-最近15天', '2016-05-23 08:00:00', '2016-05-23 08:00:00');
 insert into h50_calc_mode values ('99' ,'未加工', '2016-05-23 08:00:00', '2016-05-23 08:00:00');
 
 DROP TABLE h50_flat_rule_config;

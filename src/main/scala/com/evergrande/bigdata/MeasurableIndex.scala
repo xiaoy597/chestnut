@@ -26,6 +26,8 @@ case class MeasurableIndex(indexMap: Map[String, BigDecimal], today: Date, table
 
   val date7DaysBefore = getDateBeforeDays(7)
   val date30DaysBefore = getDateBeforeDays(30)
+  val date10DaysBefore = getDateBeforeDays(10)
+  val date15DaysBefore = getDateBeforeDays(15)
 
   def create(rowWithRule: RowWithRuleType): MeasurableIndex = {
 
@@ -67,6 +69,8 @@ case class MeasurableIndex(indexMap: Map[String, BigDecimal], today: Date, table
         case "10" => "current"
         case "20" => "sum7d"
         case "21" => "sum30d"
+        case "22" => "sum10d"
+        case "23" => "sum15d"
         case _ => "unknown"
       })
 
@@ -84,6 +88,16 @@ case class MeasurableIndex(indexMap: Map[String, BigDecimal], today: Date, table
         else
           indexMap + (targetIndexName -> indexValue)
       case "21" if indexDate.after(date30DaysBefore) => // Aggregate on last 30 days.
+        if (indexMap.contains(targetIndexName))
+          indexMap + (targetIndexName -> (indexValue + indexMap(targetIndexName)))
+        else
+          indexMap + (targetIndexName -> indexValue)
+      case "22" if indexDate.after(date10DaysBefore) => // Aggregate on last 30 days.
+        if (indexMap.contains(targetIndexName))
+          indexMap + (targetIndexName -> (indexValue + indexMap(targetIndexName)))
+        else
+          indexMap + (targetIndexName -> indexValue)
+      case "23" if indexDate.after(date15DaysBefore) => // Aggregate on last 30 days.
         if (indexMap.contains(targetIndexName))
           indexMap + (targetIndexName -> (indexValue + indexMap(targetIndexName)))
         else

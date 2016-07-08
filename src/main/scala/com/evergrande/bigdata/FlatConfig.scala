@@ -295,6 +295,10 @@ object FlatConfig {
                     "' and statt_dt <= '" + sdf.format(DateUtils.today) + "' "
                   case "21" => "and statt_dt > '" + sdf.format(DateUtils.getDateBeforeDays(30)) +
                     "' and statt_dt <= '" + sdf.format(DateUtils.today) + "' "
+                  case "22" => "and statt_dt > '" + sdf.format(DateUtils.getDateBeforeDays(10)) +
+                    "' and statt_dt <= '" + sdf.format(DateUtils.today) + "' "
+                  case "23" => "and statt_dt > '" + sdf.format(DateUtils.getDateBeforeDays(15)) +
+                    "' and statt_dt <= '" + sdf.format(DateUtils.today) + "' "
                   case _ => "1=0 "
                 })).reduce(_ + " OR " + _) +
             ") "
