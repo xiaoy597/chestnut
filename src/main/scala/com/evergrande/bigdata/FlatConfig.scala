@@ -226,17 +226,17 @@ object FlatConfig {
 
       while (rs.next) {
         item = FlatRuleConfig(
-          rs.getString("indx_tbl_nm").toLowerCase,
-          rs.getString("inds_cls_cd"),
-          rs.getString("indx_clmn_nm").toLowerCase,
-          rs.getString("statt_indx_id"),
-          rs.getString("dim_id"),
-          rs.getString("indx_calc_mode_cd"),
-          rs.getString("indx_calc_mode_nm"),
-          rs.getString("flat_mode_cd"),
-          rs.getString("dim_clmn_nm").toLowerCase,
-          rs.getString("key_clmn_nm").toLowerCase,
-          rs.getString("ext_condition").toLowerCase)
+          rs.getString("indx_tbl_nm").trim.toLowerCase,
+          rs.getString("inds_cls_cd").trim,
+          rs.getString("indx_clmn_nm").trim.toLowerCase,
+          rs.getString("statt_indx_id").trim,
+          rs.getString("dim_id").trim,
+          rs.getString("indx_calc_mode_cd").trim,
+          rs.getString("indx_calc_mode_nm").trim,
+          rs.getString("flat_mode_cd").trim,
+          rs.getString("dim_clmn_nm").trim.toLowerCase,
+          rs.getString("key_clmn_nm").trim.toLowerCase,
+          rs.getString("ext_condition").trim.toLowerCase)
         itemList += item
       }
 

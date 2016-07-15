@@ -29,7 +29,7 @@ class DataTransformer(val sc: SparkContext, val today: Date, val numPartitions: 
 
       println("SQL is [" + sql + "]")
 
-      val dataFrame = HiveUtils.getDataFromHive(sql, sc)
+      val dataFrame = HiveUtils.getDataFromHive(sql, sc, numPartitions)
 
       val rdd =
         if (config._1.flat_mode_cd.equals("20"))
@@ -37,11 +37,10 @@ class DataTransformer(val sc: SparkContext, val today: Date, val numPartitions: 
         else
           getNonMeasurableIndexData(dataFrame, config._1, config._2).cache()
 
-      if (TransformerConfigure.isDebug)
-        if (rdd.count() > 0) {
-          println("Index data from table " + config._1.indx_tbl_nm + " for industry " + config._1.inds_cls_cd + " is:")
-          rdd.take(10).foreach(println)
-        }
+      if (TransformerConfigure.isDebug) {
+        println("Index data from table " + config._1.indx_tbl_nm + " for industry " + config._1.inds_cls_cd + " is:")
+        rdd.take(10).foreach(println)
+      }
 
       rddList += rdd
     }
@@ -63,14 +62,36 @@ class DataTransformer(val sc: SparkContext, val today: Date, val numPartitions: 
       for (c <- x) yield (c.indx_clmn_nm, c.indx_calc_mode_cd)
     })
 
-    val rowWithRule = dataFrame.map(x => ((x.getAs[String]("statt_indx_id"), x.getAs[String](tableConfig.dim_clmn_nm)), x))
-      .join(sc.parallelize(indexRule.toList))
-      .map(x => (x._2._1.getAs[String](tableConfig.key_clmn_nm), x._2)).cache()
+    val indexRuleBroadCast = sc.broadcast(indexRule.toList)
+
+    //    val rowWithRule = dataFrame.map(x => ((x.getAs[String]("statt_indx_id"), x.getAs[String](tableConfig.dim_clmn_nm)), x))
+    //      .join(sc.parallelize(indexRule.toList))
+    //      .map(x => (x._2._1.getAs[String](tableConfig.key_clmn_nm), x._2)).cache()
+    //
+    val rowWithRule = dataFrame.map(x => {
+      val statt_indx_id = x.getAs[String]("statt_indx_id")
+      val dim_clmn_value = x.getAs[String](tableConfig.dim_clmn_nm)
+      val rule = indexRuleBroadCast.value.find(r => r._1._1.equals(statt_indx_id) && r._1._2.equals(dim_clmn_value))
+      match {
+        case Some(flatRule) => flatRule
+        case _ => throw new Exception("Flat rule not found for %s.%s".format(statt_indx_id, dim_clmn_value))
+      }
+
+      (x.getAs[String](tableConfig.key_clmn_nm), (x, rule._2))
+    })
 
     if (TransformerConfigure.isDebug) {
-      println("RowWithRule is:")
-      rowWithRule.take(10).foreach(println)
+      //      println("%d row-with-rule in %d partitions.".format(rowWithRule.count(), rowWithRule.partitions.length))
+      println("Sample of row-with-rule is:")
+      rowWithRule.take(100).foreach(println)
     }
+
+    if (rowWithRule.partitions.length > numPartitions * 10 || rowWithRule.partitions.length < numPartitions / 2) {
+      println("Reparitioning row-with-rule into %d partitions ...".format(numPartitions))
+      rowWithRule.repartition(numPartitions).cache()
+      println("Reparition row-with-rule complete")
+    }
+
 
     val workdate = today
 
@@ -205,28 +226,25 @@ class DataTransformer(val sc: SparkContext, val today: Date, val numPartitions: 
           for (i <- r._2; if i._2.startsWith("Missing") || i._2.startsWith("Unknown")) yield i
         ).aggregateByKey(Set[String]())((u, v) => u + v, (u1, u2) => u1 ++ u2)
         .collect().foreach(println)
-    }
 
-    println("Statistics of tags:")
-    tagRDD
-      .flatMap(r => for (i <- r._2) yield (i._2, 1))
-      .reduceByKey(_ + _)
-      .collect().sortBy(_._1).foreach(println)
+      println("Statistics of tags:")
+      tagRDD
+        .flatMap(r => for (i <- r._2) yield (i._2, 1))
+        .reduceByKey(_ + _)
+        .collect().sortBy(_._1).foreach(println)
+
+    }
 
     tagRDD
   }
 
   def export2Redis(rdd: RDD[(String, Map[String, String])]): Unit = {
-    if (TransformerConfigure.isDebug) {
-      println("Number of partitions in RDD to be exported to Redis is " + rdd.partitions.length)
-    }
+    println("Number of partitions in RDD to be exported to Redis is " + rdd.partitions.length)
 
     val rddToExport = {
-      if (rdd.partitions.length > 32) {
-        if (TransformerConfigure.isDebug)
-          println("Repartition RDD to be exported to 16 partitions.")
-
-        rdd.coalesce(16)
+      if (rdd.partitions.length > 2000) {
+        println("Repartition RDD to be exported to 128 partitions.")
+        rdd.coalesce(128)
       } else
         rdd
     }.cache()
@@ -272,16 +290,12 @@ class DataTransformer(val sc: SparkContext, val today: Date, val numPartitions: 
 
   def export2HBase(tableName: String, rdd: RDD[(String, Map[String, String])]): Unit = {
 
-    if (TransformerConfigure.isDebug) {
-      println("Number of partitions in RDD to be exported to HBase is " + rdd.partitions.length)
-    }
+    println("Number of partitions in RDD to be exported to HBase is " + rdd.partitions.length)
 
     val rddToExport = {
-      if (rdd.partitions.length > 32) {
-        if (TransformerConfigure.isDebug)
-          println("Repartition RDD to be exported to 16 partitions.")
-
-        rdd.coalesce(16)
+      if (rdd.partitions.length > 2000) {
+        println("Repartition RDD to be exported to 128 partitions.")
+        rdd.coalesce(128)
       } else
         rdd
     }.cache()

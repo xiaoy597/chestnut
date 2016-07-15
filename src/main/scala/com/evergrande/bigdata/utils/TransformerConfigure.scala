@@ -7,5 +7,6 @@ object TransformerConfigure {
 
   var isDebug = false
   var export2Redis = false
+  var export2HBase = false
 
 }

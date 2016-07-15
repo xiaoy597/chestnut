@@ -36,7 +36,8 @@ object MetricsLoader {
     val numPartitions = args(4).toInt
 
     TransformerConfigure.export2Redis = args(5).toBoolean
-    TransformerConfigure.isDebug = args(6).toBoolean
+    TransformerConfigure.export2HBase = args(6).toBoolean
+    TransformerConfigure.isDebug = args(7).toBoolean
 
     val transformer = new DataTransformer(sc, today, numPartitions)
 
@@ -62,16 +63,18 @@ object MetricsLoader {
         println("Discretized metrics exported to Redis.")
       }
 
-      val indexCategory = FlatConfig.getIndexCategory()
-        .filter(x => x.indx_cat_cd.equals(FlatConfig.indx_cat_cd)).head
+      if (TransformerConfigure.export2HBase) {
+        val indexCategory = FlatConfig.getIndexCategory()
+          .filter(x => x.indx_cat_cd.equals(FlatConfig.indx_cat_cd)).head
 
-      println("Exporting user metrics to HBase ...")
-      transformer.export2HBase(indexCategory.metrics_tbl_nm, metricsRDD)
-      println("Metrics data exported to HBase.")
+        println("Exporting user metrics to HBase ...")
+        transformer.export2HBase(indexCategory.metrics_tbl_nm, metricsRDD)
+        println("Metrics data exported to HBase.")
 
-      println("Exporting tags to HBase ...")
-      transformer.export2HBase(indexCategory.tag_tbl_nm, tagsRDD)
-      println("Tags exported to HBase.")
+        println("Exporting tags to HBase ...")
+        transformer.export2HBase(indexCategory.tag_tbl_nm, tagsRDD)
+        println("Tags exported to HBase.")
+      }
     }
 
     sc.stop()
