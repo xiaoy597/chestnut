@@ -18,7 +18,7 @@ object HiveUtils {
     }
     sqlContext.sql("use csum")
 
-    val dataFrame = sqlContext.sql(sqlStmt).coalesce(numPartitions).cache()
+    val dataFrame = sqlContext.sql(sqlStmt).coalesce(numPartitions)
 
     if (TransformerConfigure.isDebug) {
       println("Sample result of the SQL [%s]:".format(sqlStmt))

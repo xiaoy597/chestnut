@@ -41,14 +41,14 @@ object MetricsLoader {
 
     val transformer = new DataTransformer(sc, today, numPartitions)
 
-    val metricsRDD = transformer.computeMetricsData()
+    val metricsRDD = transformer.computeMetricsData().repartition(numPartitions).cache()
     if (TransformerConfigure.isDebug){
       println("Metrics data for index category %s and industry %s has %d rows:"
         .format(FlatConfig.indx_cat_cd, FlatConfig.inds_cls_cd, metricsRDD.count()))
       metricsRDD.take(100).foreach(println)
     }
 
-    val tagsRDD = transformer.computeTagData(metricsRDD)
+    val tagsRDD = transformer.computeTagData(metricsRDD).cache()
     if (TransformerConfigure.isDebug){
       println("Tag data for index category %s and industry %s has %d rows:"
         .format(FlatConfig.indx_cat_cd, FlatConfig.inds_cls_cd, tagsRDD.count()))
@@ -70,6 +70,7 @@ object MetricsLoader {
         println("Exporting user metrics to HBase ...")
         transformer.export2HBase(indexCategory.metrics_tbl_nm, metricsRDD)
         println("Metrics data exported to HBase.")
+        metricsRDD.unpersist()
 
         println("Exporting tags to HBase ...")
         transformer.export2HBase(indexCategory.tag_tbl_nm, tagsRDD)

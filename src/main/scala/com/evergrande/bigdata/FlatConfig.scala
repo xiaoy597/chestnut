@@ -269,7 +269,8 @@ object FlatConfig {
         ""
         ) + " " +
       "FROM " + tableConfig.indx_tbl_nm + " " +
-      "WHERE " + getIndexTableQueryCondition(tableConfig, columnConfig)
+      "WHERE " + getIndexTableQueryCondition(tableConfig, columnConfig) + " " +
+      "AND data_dt_iso = '" + new SimpleDateFormat("yyyy-MM-dd").format(DateUtils.today) + "'"
 
   }
 

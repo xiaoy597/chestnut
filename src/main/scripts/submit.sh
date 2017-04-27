@@ -5,7 +5,13 @@ WORK_DATE=$2
 INDUSTRY_CODE=$3
 PARTITIONS=$4
 EXPORT2REDIS=$5
-METRICS_DEBUG=$6
+EXPORT2HBASE=$6
+METRICS_DEBUG=$7
+
+export METRICS_CFG_DB_SERVER=59.212.226.51
+export METRICS_CFG_DB_PORT=3306
+export METRICS_CFG_DB_USER=root
+export METRICS_CFG_DB_PASSWORD=123456
 
 if [ -z "$INDEX_CAT" -o -z "$WORK_DATE" -o -z "$INDUSTRY_CODE" ]; then
 	echo "Usage: $0 <INDEX_CAT> <WORK_DATE> <INDUSTRY_CODE>"
@@ -13,30 +19,25 @@ if [ -z "$INDEX_CAT" -o -z "$WORK_DATE" -o -z "$INDUSTRY_CODE" ]; then
 fi
 
 if [ -z "$PARTITIONS" ]; then
-	PARTITIONS=64
+	PARTITIONS=1024
 fi
 
 if [ -z "$EXPORT2REDIS" ]; then
 	EXPORT2REDIS=true
 fi
 
+if [ -z "$EXPORT2HBASE" ]; then
+	EXPORT2HBASE=true
+fi
+
 if [ -z "$METRICS_DEBUG" ]; then
 	METRICS_DEBUG=true
 fi
 
-#INDUSTRY_CODE=1100		# 房地产
-#INDUSTRY_CODE=2000		# 酒店
-#INDUSTRY_CODE=3110		# 足球
-#INDUSTRY_CODE=7020		# 金服
+#INDUSTRY_CODE=1000		# 人口
 
-if [ "$INDEX_CAT" != "0" ]; then
-	echo "Invalid INDEX_CAT, please choose one from 0."
-	exit -1
-fi
-
-
-if [ "$INDUSTRY_CODE" != "1100" -a "$INDUSTRY_CODE" != "2000" -a "$INDUSTRY_CODE" != "3110" -a "$INDUSTRY_CODE" != "7020" ]; then
-	echo "Invalid INDUSTRY_CODE, please choose one from 1100, 2000, 3110 and 7020."
+if [ "$INDEX_CAT" != "1" ]; then
+	echo "Invalid INDEX_CAT, please choose one from 1."
 	exit -1
 fi
 
@@ -158,12 +159,13 @@ spark-submit \
 	--class com.evergrande.bigdata.MetricsLoader \
 	--master yarn \
 	--num-executors 8 \
-	--driver-memory 1g \
-	--executor-memory 8g \
+	--driver-memory 4g \
+	--executor-memory 40g \
 	--executor-cores 4 \
 	--jars $DEPS \
 	--conf spark.default.parallelism=$PARTITIONS \
-	chestnut-1.0-SNAPSHOT.jar cluster $INDEX_CAT $WORK_DATE $INDUSTRY_CODE $PARTITIONS $EXPORT2REDIS $METRICS_DEBUG 1>${LOG_FILE} 2>&1
+	--conf spark.yarn.queue=etl \
+	chestnut-1.0-SNAPSHOT.jar cluster $INDEX_CAT $WORK_DATE $INDUSTRY_CODE $PARTITIONS $EXPORT2REDIS $EXPORT2HBASE $METRICS_DEBUG 1>${LOG_FILE} 2>&1
 
 grep Excep ${LOG_FILE} > /dev/null
 if [ $? -eq 1 ]; then

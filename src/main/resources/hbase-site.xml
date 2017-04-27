@@ -24,7 +24,11 @@
 <configuration>
   <property>
     <name>hbase.zookeeper.quorum</name>
-    <value>bigdata-01.dev.wgq.hdb.com,bigdata-02.dev.wgq.hdb.com,bigdata-03.dev.wgq.hdb.com,bigdata-04.dev.wgq.hdb.com,bigdata-05.dev.wgq.hdb.com</value>
+    <!-- For Test Env
+    <value>host2,host3,host4</value>
+    -->
+    <!-- For Production Env -->
+    <value>master1,master2,manager1</value>
   </property>
   <property>
     <name>zookeeper.znode.parent</name>

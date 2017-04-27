@@ -3,7 +3,7 @@ package com.evergrande.bigdata
 import java.util.Date
 
 import com.evergrande.bigdata.utils.{HiveUtils, ProjectConfig, RedisOperUtil, TransformerConfigure}
-import org.apache.hadoop.hbase.client.{HTable, Put}
+import org.apache.hadoop.hbase.client.{Durability, HTable, Put}
 import org.apache.hadoop.hbase.util.Bytes
 import org.apache.hadoop.hbase.{HBaseConfiguration, TableName}
 import org.apache.spark.SparkContext
@@ -33,9 +33,9 @@ class DataTransformer(val sc: SparkContext, val today: Date, val numPartitions: 
 
       val rdd =
         if (config._1.flat_mode_cd.equals("20"))
-          getMeasurableIndexData(dataFrame, config._1, config._2).cache()
+          getMeasurableIndexData(dataFrame, config._1, config._2)
         else
-          getNonMeasurableIndexData(dataFrame, config._1, config._2).cache()
+          getNonMeasurableIndexData(dataFrame, config._1, config._2)
 
       if (TransformerConfigure.isDebug) {
         println("Index data from table " + config._1.indx_tbl_nm + " for industry " + config._1.inds_cls_cd + " is:")
@@ -52,7 +52,7 @@ class DataTransformer(val sc: SparkContext, val today: Date, val numPartitions: 
         case (Some(m), None) => m
         case _ => Map("Error" -> "Wrong result from full outer join!")
       }
-    ).cache()
+    )
   }
 
   def getMeasurableIndexData(dataFrame: DataFrame, tableConfig: FlatTableConfig, columnConfig: List[FlatColumnConfig])
@@ -115,7 +115,7 @@ class DataTransformer(val sc: SparkContext, val today: Date, val numPartitions: 
           val v = r.get(r.fieldIndex(c.indx_clmn_nm))
           if (v == null || v.toString.length == 0) "null" else v.toString
         }).toMap
-    }).cache()
+    })
 
     rdd
   }
@@ -204,7 +204,7 @@ class DataTransformer(val sc: SparkContext, val today: Date, val numPartitions: 
                 if (mapping.contains(idxValueStr))
                   Map(tagName -> (tagId + mapping(idxValueStr)))
                 else
-                  Map(tagName -> ("Missing value for key " + indexMap(idx)))
+                  Map(tagName -> ("Missing value for key " + idx + "(" + indexMap(idx) + ")"))
               } else
                 Map(tagName -> ("Missing mapping class " + mappingTableId))
 
@@ -221,17 +221,20 @@ class DataTransformer(val sc: SparkContext, val today: Date, val numPartitions: 
 
     if (TransformerConfigure.isDebug) {
       println("Records failed to be discretized: ")
-      tagRDD
-        .flatMap(r =>
-          for (i <- r._2; if i._2.startsWith("Missing") || i._2.startsWith("Unknown")) yield i
-        ).aggregateByKey(Set[String]())((u, v) => u + v, (u1, u2) => u1 ++ u2)
-        .collect().foreach(println)
+
+
+//      tagRDD
+//        .flatMap(r =>
+//          for (i <- r._2; if i._2.startsWith("Missing") || i._2.startsWith("Unknown")) yield i
+//        ).aggregateByKey(Set[String]())((u, v) => u + v, (u1, u2) => u1 ++ u2)
+//        .mapValues(set => set.aggregate(0)((count, v) => count+1, (count1, count2) => count1+count2))
+//        .collect().foreach(println)
 
       println("Statistics of tags:")
-      tagRDD
-        .flatMap(r => for (i <- r._2) yield (i._2, 1))
-        .reduceByKey(_ + _)
-        .collect().sortBy(_._1).foreach(println)
+//      tagRDD
+//        .flatMap(r => for (i <- r._2) yield (i._2, 1))
+//        .reduceByKey(_ + _)
+//        .collect().sortBy(_._1).foreach(println)
 
     }
 
@@ -242,12 +245,12 @@ class DataTransformer(val sc: SparkContext, val today: Date, val numPartitions: 
     println("Number of partitions in RDD to be exported to Redis is " + rdd.partitions.length)
 
     val rddToExport = {
-      if (rdd.partitions.length > 2000) {
-        println("Repartition RDD to be exported to 128 partitions.")
-        rdd.coalesce(128)
+      if (rdd.partitions.length > 10240) {
+        println("Repartition RDD to be exported to 64 partitions.")
+        rdd.coalesce(256)
       } else
         rdd
-    }.cache()
+    }
 
     val numTag2Redis = sc.accumulator(0)
     val numRow2Redis = sc.accumulator(0)
@@ -293,12 +296,12 @@ class DataTransformer(val sc: SparkContext, val today: Date, val numPartitions: 
     println("Number of partitions in RDD to be exported to HBase is " + rdd.partitions.length)
 
     val rddToExport = {
-      if (rdd.partitions.length > 2000) {
-        println("Repartition RDD to be exported to 128 partitions.")
-        rdd.coalesce(128)
+      if (rdd.partitions.length > 10240) {
+        println("Repartition RDD to be exported to 64 partitions.")
+        rdd.coalesce(256)
       } else
         rdd
-    }.cache()
+    }
 
     val numCell2HBase = sc.accumulator(0)
     val numRow2HBase = sc.accumulator(0)
@@ -311,14 +314,17 @@ class DataTransformer(val sc: SparkContext, val today: Date, val numPartitions: 
       myTable.setWriteBufferSize(64 * 1024 * 1024)
       partition.foreach(row => {
 
-        val entry = new Put(Bytes.toBytes(row._1.toLong))
+//      val entry = new Put(Bytes.toBytes(row._1.toLong))
+        val entry = new Put(Bytes.toBytes(row._1))
+
+        entry.setDurability(Durability.SKIP_WAL)
 
         val metricsMap = row._2
         if (metricsMap.nonEmpty) {
           metricsMap.foreach(metric => {
             entry.add("cf".getBytes,
-              Bytes.toBytes(if (metric._1.length == 0) "null" else metric._1),
-              Bytes.toBytes(if (metric._2.length == 0) "null" else metric._2))
+              Bytes.toBytes(if (metric._1.length == 0 || metric._1 == null) "null" else metric._1),
+              Bytes.toBytes(if (metric._2.length == 0 || metric._2 == null) "null" else metric._2))
             numCell2HBase += 1
           })
           myTable.put(entry)

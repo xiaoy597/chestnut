@@ -5,27 +5,20 @@
     <option name="CODE_STYLE_SCHEME" value="" />
   </component>
   <component name="CompilerConfiguration">
-    <option name="DEFAULT_COMPILER" value="Javac" />
-    <resourceExtensions />
     <wildcardResourcePatterns>
       <entry name="!?*.java" />
     </wildcardResourcePatterns>
     <annotationProcessing>
-      <profile default="true" name="Default" enabled="false">
-        <processorPath useClasspath="true" />
-      </profile>
-      <profile default="false" name="Maven default annotation processors profile" enabled="true">
+      <profile name="Maven default annotation processors profile" enabled="true">
         <sourceOutputDir name="target/generated-sources/annotations" />
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
-        <processorPath useClasspath="true" />
         <module name="chestnut" />
         <module name="wordcount" />
       </profile>
     </annotationProcessing>
-    <bytecodeTargetLevel>
+    <bytecodeTargetLevel target="1.7">
       <module name="chestnut" target="1.7" />
-      <module name="wordcount" target="1.7" />
     </bytecodeTargetLevel>
   </component>
   <component name="CopyrightManager" default="" />
@@ -46,6 +39,12 @@
     <option name="RELEASE_TAG" />
     <option name="LOG_MESSAGE" />
     <option name="CHECKOUT_AFTER_IMPORT" value="true" />
+  </component>
+  <component name="InspectionProjectProfileManager">
+    <profile version="1.0">
+      <option name="myName" value="Project Default" />
+    </profile>
+    <version value="1.0" />
   </component>
   <component name="JUnitProjectSettings">
     <option name="TEST_RUNNER" value="UI" />
@@ -211,13 +210,20 @@
       <module fileurl="file://$PROJECT_DIR$/chestnut.iml" filepath="$PROJECT_DIR$/chestnut.iml" />
     </modules>
   </component>
-  <component name="ProjectRootManager" version="2" languageLevel="JDK_1_7" default="false" assert-keyword="true" jdk-15="true" project-jdk-name="1.8.0_66" project-jdk-type="JavaSDK" />
+  <component name="ProjectRootManager" version="2" languageLevel="JDK_1_7" default="false" project-jdk-name="1.8" project-jdk-type="JavaSDK" />
   <component name="ScalaCompilerConfiguration">
-    <profile name="Maven 1" modules="wordcount,chestnut">
+    <profile name="Maven 1" modules="wordcount">
       <parameters>
         <parameter value="-make:transitive" />
         <parameter value="-dependencyfile" />
         <parameter value="$PROJECT_DIR$/target/.scala_dependencies" />
+      </parameters>
+    </profile>
+    <profile name="Maven 2" modules="chestnut">
+      <parameters>
+        <parameter value="-make:transitive" />
+        <parameter value="-dependencyfile" />
+        <parameter value="C:\Users\xiaoy\IdeaProjects\wordcount\target/.scala_dependencies" />
       </parameters>
     </profile>
   </component>

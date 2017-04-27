@@ -1,15 +1,20 @@
 package com.evergrande.bigdata.utils;
 
 public class ProjectConfig {
-//    public static final String REDIS_HOST_IP = "120.26.215.198";
-    public static final String REDIS_HOST_IP = "10.127.133.59";
-    public static final int REDIS_HOST_PORT = 7777;
+    // Test Env
+//    public static final String REDIS_HOST_IP = "59.212.226.7";
+//    public static final int REDIS_HOST_PORT = 6379;
+
+    // Production Env
+    public static final String REDIS_HOST_IP = "59.212.226.49";
+    public static final int REDIS_HOST_PORT = 7000;
+
     public static final int REDIS_MAX_TOTAL = 1024;
     public static final int REDIS_MAX_IDLE = 10000;
     public static final int REDIS_MAX_WAIT = 30000;
     public static final int REDIS_TIMEOUT = 30000;
     public static final boolean REDIS_TEST_ON_BORROW = true;
-    public static final String REDIS_AUTH = "O22nwf%Tt";
+    public static final String REDIS_AUTH = "123456";
 
     public static final String KEY_PREFIX = "tt_test:";
 
