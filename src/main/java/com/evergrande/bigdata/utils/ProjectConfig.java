@@ -7,7 +7,7 @@ public class ProjectConfig {
 
     // Production Env
     public static final String REDIS_HOST_IP = "59.212.226.49";
-    public static final int REDIS_HOST_PORT = 7000;
+    public static final int REDIS_HOST_PORT = 6379;
 
     public static final int REDIS_MAX_TOTAL = 1024;
     public static final int REDIS_MAX_IDLE = 10000;

@@ -25,7 +25,14 @@ public class RedisOperUtil {
             config.setTimeBetweenEvictionRunsMillis(ProjectConfig.REDIS_MAX_WAIT);
             config.setMinEvictableIdleTimeMillis(ProjectConfig.REDIS_TIMEOUT);
             config.setTestOnBorrow(ProjectConfig.REDIS_TEST_ON_BORROW);
-            jedisPool = new JedisPool(config, ProjectConfig.REDIS_HOST_IP, ProjectConfig.REDIS_HOST_PORT, ProjectConfig.REDIS_TIMEOUT, ProjectConfig.REDIS_AUTH);
+
+            String redisHostIP = System.getenv("REDIS_HOST_IP");
+            if (redisHostIP == null)
+                throw new RuntimeException("Envrionment REDIS_HOST_IP is not defined.");
+
+            int redisPort = Integer.valueOf(System.getenv("REDIS_HOST_PORT"));
+
+            jedisPool = new JedisPool(config, redisHostIP, redisPort, ProjectConfig.REDIS_TIMEOUT, ProjectConfig.REDIS_AUTH);
         } catch (Exception e) {
             logger.error("RedisOperUtil init failed: ", e);
         }

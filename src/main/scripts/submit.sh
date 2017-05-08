@@ -13,6 +13,9 @@ export METRICS_CFG_DB_PORT=3306
 export METRICS_CFG_DB_USER=root
 export METRICS_CFG_DB_PASSWORD=123456
 
+export REDIS_HOST_IP=59.212.226.49
+export REDIS_HOST_PORT=6379
+
 if [ -z "$INDEX_CAT" -o -z "$WORK_DATE" -o -z "$INDUSTRY_CODE" ]; then
 	echo "Usage: $0 <INDEX_CAT> <WORK_DATE> <INDUSTRY_CODE>"
 	exit -1
@@ -167,14 +170,16 @@ spark-submit \
 	--conf spark.yarn.queue=etl \
 	chestnut-1.0-SNAPSHOT.jar cluster $INDEX_CAT $WORK_DATE $INDUSTRY_CODE $PARTITIONS $EXPORT2REDIS $EXPORT2HBASE $METRICS_DEBUG 1>${LOG_FILE} 2>&1
 
+export RET=$?
+
 grep Excep ${LOG_FILE} > /dev/null
 if [ $? -eq 1 ]; then
 	echo "Job finished successfully."
 	echo "Please refer to HBase table 'user_metrics_test/user_discrete_metrics_test' for the result."
-	exit 0
+	exit $RET
 else
 	echo "Job failed with exception, please check ${LOG_FILE} for more details."
-	exit -1
+	exit $RET
 fi
 
 
