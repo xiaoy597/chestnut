@@ -10,9 +10,18 @@ object MetricsLoader {
 
   def main(args: Array[String]) {
 
+    val redisHostIP = System.getenv("REDIS_HOST_IP")
+    if (redisHostIP == null)
+      throw new RuntimeException("Environment variable REDIS_HOST_IP is not defined.")
+
+    val redisPort = Integer.valueOf(System.getenv("REDIS_HOST_PORT"))
+
+    ProjectConfig.getInstance().REDIS_HOST_IP = redisHostIP
+    ProjectConfig.getInstance().REDIS_HOST_PORT = redisPort
+
     if (args.length == 1 && args(0).equalsIgnoreCase("clear")) {
       println("Clearing existing Redis data ...")
-      RedisOperUtil.clearRedisOldKey(ProjectConfig.KEY_PREFIX)
+      RedisOperUtil.clearRedisOldKey()
       println("Redis data cleared.")
       return
     }

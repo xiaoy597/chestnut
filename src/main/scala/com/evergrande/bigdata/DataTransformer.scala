@@ -255,21 +255,23 @@ class DataTransformer(val sc: SparkContext, val today: Date, val numPartitions: 
     val numTag2Redis = sc.accumulator(0)
     val numRow2Redis = sc.accumulator(0)
 
+    val redisConfig = sc.broadcast(ProjectConfig.getInstance())
+
     // Write to Redis
     rddToExport.foreachPartition(partition => {
       try {
-        val jedis = RedisOperUtil.getJedis
+        val jedis = RedisOperUtil.getJedis(redisConfig.value)
         if (jedis == null) {
           println("Failed to get Jedis resource!")
         } else {
           var pipeline = jedis.pipelined()
           var i: Int = 0
           partition.foreach(row => {
-            for (metric <- row._2; redisKey = ProjectConfig.KEY_PREFIX + metric._2) {
+            for (metric <- row._2; redisKey = redisConfig.value.KEY_PREFIX + metric._2) {
               pipeline.setbit(redisKey, row._1.toLong, true)
               i += 1
               numTag2Redis += 1
-              if (i == 1000000) {
+              if (i == 1000) {
                 pipeline.sync()
                 pipeline = jedis.pipelined()
                 i = 0
@@ -282,7 +284,7 @@ class DataTransformer(val sc: SparkContext, val today: Date, val numPartitions: 
           RedisOperUtil.returnResource(jedis)
         }
       } catch {
-        case e: Exception =>
+        case _: Exception =>
           println("Exception raised in exporting tags to Redis.")
       }
     })
@@ -311,7 +313,7 @@ class DataTransformer(val sc: SparkContext, val today: Date, val numPartitions: 
       val myConf = HBaseConfiguration.create()
       val myTable = new HTable(myConf, TableName.valueOf(tableName))
       myTable.setAutoFlush(false, false)
-      myTable.setWriteBufferSize(64 * 1024 * 1024)
+      myTable.setWriteBufferSize(1 * 1024 * 1024)
       partition.foreach(row => {
 
 //      val entry = new Put(Bytes.toBytes(row._1.toLong))
@@ -335,6 +337,7 @@ class DataTransformer(val sc: SparkContext, val today: Date, val numPartitions: 
         numRow2HBase += 1
       })
       myTable.flushCommits()
+      myTable.close()
     })
 
     println("Totally " + numRow2HBase.value + " rows with "
