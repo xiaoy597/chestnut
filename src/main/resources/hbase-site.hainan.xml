@@ -28,8 +28,7 @@
     <value>host2,host3,host4</value>
     -->
     <!-- For Production Env -->
-    <!--<value>master1,master2,manager1</value>-->
-    <value>host1,host2,host3</value>
+    <value>master1,master2,manager1</value>
   </property>
   <property>
     <name>zookeeper.znode.parent</name>
