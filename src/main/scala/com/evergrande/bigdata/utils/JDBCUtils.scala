@@ -18,7 +18,10 @@ object JDBCUtils {
       // Connect to MySQL server in IDC
       System.getenv("METRICS_CFG_DB_SERVER")
       conn = DriverManager.getConnection(
-        "jdbc:mysql://%s:%s/user_profile".format(System.getenv("METRICS_CFG_DB_SERVER"), System.getenv("METRICS_CFG_DB_PORT"))
+        "jdbc:mysql://%s:%s/%s".format(
+          System.getenv("METRICS_CFG_DB_SERVER"),
+          System.getenv("METRICS_CFG_DB_PORT"),
+          System.getenv("METRICS_CFG_DB_NAME"))
         , System.getenv("METRICS_CFG_DB_USER"), System.getenv("METRICS_CFG_DB_PASSWORD"))
 
     } catch {
