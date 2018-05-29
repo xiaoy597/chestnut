@@ -18,6 +18,10 @@ object MetricsLoader {
 
     ProjectConfig.getInstance().REDIS_HOST_IP = redisHostIP
     ProjectConfig.getInstance().REDIS_HOST_PORT = redisPort
+    ProjectConfig.getInstance().KEY_PREFIX =
+      if (System.getenv("REDIS_KEY_PREFIX") == null)
+        "default_key_"
+      else System.getenv("REDIS_KEY_PREFIX")
 
     if (args.length == 1 && args(0).equalsIgnoreCase("clear")) {
       println("Clearing existing Redis data ...")

@@ -23,7 +23,7 @@ public class ProjectConfig implements Serializable{
     public final boolean REDIS_TEST_ON_BORROW = true;
     public final String REDIS_AUTH = "123456";
 
-    public final String KEY_PREFIX = "tt_test:";
+    public String KEY_PREFIX = "";
 
     public final String MOBILE_2_GUID_MAP = "mobile_to_guid_map_test";
     public final String GUID_2_USER_MAP = "guid_to_user_map_test";
