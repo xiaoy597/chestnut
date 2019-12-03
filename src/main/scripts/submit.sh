@@ -16,6 +16,8 @@ export METRICS_CFG_DB_NAME=user_profile
 
 export REDIS_HOST_IP=59.212.226.49
 export REDIS_HOST_PORT=6379
+export REDIS_AUTH=123456
+export REDIS_KEY_PREFIX=test
 
 if [ -z "$INDEX_CAT" -o -z "$WORK_DATE" -o -z "$INDUSTRY_CODE" ]; then
 	echo "Usage: $0 <INDEX_CAT> <WORK_DATE> <INDUSTRY_CODE>"

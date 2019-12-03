@@ -21,7 +21,7 @@ public class ProjectConfig implements Serializable{
     public final int REDIS_MAX_WAIT = 30000;
     public final int REDIS_TIMEOUT = 30000;
     public final boolean REDIS_TEST_ON_BORROW = true;
-    public final String REDIS_AUTH = "123456";
+    public final String REDIS_AUTH = System.getenv("REDIS_AUTH");
 
     public String KEY_PREFIX = "";
 

@@ -22,7 +22,7 @@ public class RedisOperUtil {
                 Jedis resource = jedisPool.getResource();
                 return resource;
             } else {
-                logger.info("Creating jedis pool ...");
+                logger.info("Creating jedis pool using password {}...", projectConfig.REDIS_AUTH);
 
                 JedisPoolConfig config = new JedisPoolConfig();
                 config.setMaxTotal(projectConfig.REDIS_MAX_TOTAL);
@@ -36,6 +36,11 @@ public class RedisOperUtil {
                         projectConfig.REDIS_HOST_PORT,
                         projectConfig.REDIS_TIMEOUT,
                         projectConfig.REDIS_AUTH);
+
+//                jedisPool = new JedisPool(config,
+//                        projectConfig.REDIS_HOST_IP,
+//                        projectConfig.REDIS_HOST_PORT,
+//                        projectConfig.REDIS_TIMEOUT);
 
                 return jedisPool.getResource();
             }
